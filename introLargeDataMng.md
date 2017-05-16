@@ -15,10 +15,8 @@ EarthBiAs2017, Rhodes Island, Greece
     -   [Creating temporary variables](#creating-temporary-variables)
     -   [Special Symbols](#special-symbols)
         -   [`SD`](#sd)
+        -   [`.N`](#n)
     -   [Using custom functions in `data.table`](#using-custom-functions-in-data.table)
--   [Calculation of environmental indices](#calculation-of-environmental-indices)
-    -   [SPI-(12) Index](#spi-12-index)
-    -   [Visualizing SPI index](#visualizing-spi-index)
 
 Introduction
 ============
@@ -48,7 +46,7 @@ Data import
 # Load libraries
 library(data.table)
 # Set working directory
-setwd("~/Documents/Summer_School_2017/setupWork")
+setwd("~/Documents/Summer_School_2017/EarthBiAs2017/")
 # Read precipitation data
 envDat <- readRDS("./spanishPrecipRecords.RDS")
 # Convert dataset to DT
@@ -181,14 +179,27 @@ envDat[Q_RR !=9, lapply(.SD, min), .SDcols = c("RR"), by = "STAID"]
 envDat[Q_RR !=9, lapply(.SD, min), .SDcols = c("RR", "Q_RR"), by = "STAID"]
 ```
 
+### `.N`
+
+`.N` is an integer, length 1, containing the number of rows in the group. The column that is named as N and not as .NL
+
+``` r
+# Return the number of records per station
+envDat[, .N, by = "STAID"]
+# Create a counter variable per station
+envDat[, 1:.N, by = "STAID"]
+```
+
+`SD` can be combined with `.N` to access specific rows of the dataset:
+
+``` r
+# Return last record of each one of the three variables
+envDat[,.SD[.N], .SDcols = c("STAID","DATE", "RR")]
+# Return all but the last record for the selected columns
+envDat[,.SD[1:(.N-1)], .SDcols = c("STAID","DATE", "RR")]
+# Return all but the last record for the selected columns by station
+envDat[,.SD[1:(.N-1)], .SDcols = c("STAID","DATE", "RR"), by = "STAID"]
+```
+
 Using custom functions in `data.table`
 --------------------------------------
-
-Calculation of environmental indices
-====================================
-
-SPI-(12) Index
---------------
-
-Visualizing SPI index
----------------------
