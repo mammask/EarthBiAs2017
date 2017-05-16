@@ -50,4 +50,4 @@ dir.create(outputsFolder, showWarnings = FALSE)                     # Create out
 
 ### Download data
 
-For the purposes of the sessions in `R` we use a set of precipitation records from 300 meteorological stations across Europe. Data can be found in the following [link]().
+For the purposes of the sessions in `R` we use a set of precipitation records from 200 meteorological stations across Europe. Data can be found in the following [link](https://github.com/mammask/EarthBiAs2017/blob/master/precipStations.RDS?raw=true).
