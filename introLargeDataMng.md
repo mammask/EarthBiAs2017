@@ -421,7 +421,7 @@ envDat[,.SD, .SDcols = c("STAID","DATE", "RR")]
     ## 3351643: 11383 2017-02-27 -9999
     ## 3351644: 11383 2017-02-28 -9999
 
-It is very convenient to perform dynamic computations accross many variables:
+It is very convenient to perform dynamic computations across many variables:
 
 ``` r
 # Perform dynamic computations accross variables
@@ -522,4 +522,60 @@ Creating environmental indices with `data.table`
 
 ### Number of days with "extreme" rainfall events
 
-Extreme rainfall event is defined a daily rainfall record that exceeds a specific rainfall amount. In this case, we calculate the probability distribution of the daily rainfall series and we define extreme records those who exceed the 90% of the values.
+Extreme rainfall event is defined as a daily rainfall record exceeding a specific rainfall amount. In this case, we calculate the probability distribution of the daily rainfall series and we define extreme records those who exceed the 90% of the values.
+
+``` r
+# Calculate extreme rainfall events
+# - Calculate the 90% of the values of the probability 
+#   distribution of daily rainfall
+# - Find the records who exceed this threshold
+# - Count the records who exceed this threshold
+# - Make this computation for each station and each available year
+envDat[Q_RR != 9, {extrVal     = quantile(RR, probs = 0.9)[[1]]
+                   ExtrEv      = RR[RR > extrVal]
+                   list(N = length(ExtrEv))
+                   },
+       by = list(STAID, year(DATE))]
+```
+
+    ##       STAID year  N
+    ##    1:   229 1955 36
+    ##    2:   229 1956 36
+    ##    3:   229 1957 37
+    ##    4:   229 1958 36
+    ##    5:   229 1959 36
+    ##   ---              
+    ## 8687: 11383 2012 35
+    ## 8688: 11383 2013 37
+    ## 8689: 11383 2014 37
+    ## 8690: 11383 2015 37
+    ## 8691: 11383 2016 36
+
+In the previous example we included also the days with no rainfall amount. We can calculate the 90% of the probability distribution for the days with rainfall amount greater than zero:
+
+``` r
+# Calculate extreme rainfall events
+# - Calculate the 90% of the values of the probability 
+#   distribution of daily rainfall
+# - Find the records who exceed this threshold
+# - Count the records who exceed this threshold
+# - Make this computation for each station and each available year
+envDat[Q_RR != 9, {extrVal     = quantile(RR[RR>0], probs = 0.9)[[1]]
+                   ExtrEv      = RR[RR > extrVal]
+                   list(N = length(ExtrEv))
+                   },
+       by = list(STAID, year(DATE))]
+```
+
+    ##       STAID year  N
+    ##    1:   229 1955  9
+    ##    2:   229 1956  7
+    ##    3:   229 1957  8
+    ##    4:   229 1958  9
+    ##    5:   229 1959  9
+    ##   ---              
+    ## 8687: 11383 2012  9
+    ## 8688: 11383 2013 12
+    ## 8689: 11383 2014 13
+    ## 8690: 11383 2015  9
+    ## 8691: 11383 2016 10
