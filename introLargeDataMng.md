@@ -17,12 +17,14 @@ EarthBiAs2017, Rhodes Island, Greece
         -   [`SD`](#sd)
         -   [`.N`](#n)
         -   [Exercise 1: Summary statistics](#exercise-1-summary-statistics)
+    -   [`Join` using `data.table`](#join-using-data.table)
     -   [Environmental indices with `data.table`](#environmental-indices-with-data.table)
         -   [Number of days with "extreme" rainfall events](#number-of-days-with-extreme-rainfall-events)
         -   [Maximum number of consecutive rainfall events](#maximum-number-of-consecutive-rainfall-events)
         -   [Exercise 2: Compute the maximum number of extreme consecutive rainfall events](#exercise-2-compute-the-maximum-number-of-extreme-consecutive-rainfall-events)
 -   [Lecture 2: Visualization of environmental rainfall series](#lecture-2-visualization-of-environmental-rainfall-series)
-    -   [Visualization of rainfall series](#visualization-of-rainfall-series)
+    -   [Visualization of rainfall series - Annual rainfall amount](#visualization-of-rainfall-series---annual-rainfall-amount)
+        -   [Exercise 3: - Produce plots for other summary statistics](#exercise-3---produce-plots-for-other-summary-statistics)
 
 Introduction
 ============
@@ -520,6 +522,9 @@ As a first task you will have to pick randomly 10 meteorological stations and co
 -   Compute the number of missing records per station
 -   Which is the month with the highest number of missing values per station?
 
+`Join` using `data.table`
+-------------------------
+
 Environmental indices with `data.table`
 ---------------------------------------
 
@@ -660,8 +665,8 @@ You will need to count the maximium number of consecutive extreme rainfall event
 Lecture 2: Visualization of environmental rainfall series
 =========================================================
 
-Visualization of rainfall series
---------------------------------
+Visualization of rainfall series - Annual rainfall amount
+---------------------------------------------------------
 
 In the following example we compute the annual rainfall amount for a specific meteorological station:
 
@@ -670,7 +675,7 @@ In the following example we compute the annual rainfall amount for a specific me
 library(dygraphs)
 statID    <- envDat[,unique(STAID)][1]
 annualSer <- envDat[STAID == statID & Q_RR != 9, list(N = sum(RR)), by = year(DATE)]
-# Prodice interactive plot of annual rainfall series
+# Produce interactive plot of annual rainfall series
 dygraph(annualSer, main = paste0("Annual rainfall series of station: ",statID)) %>%
   dyAxis("y", label = "Rainfall amount (mm)") %>% dyAxis("x", label = "Year")
 ```
@@ -708,3 +713,9 @@ anRainfall <- envDat[Q_RR != 9, list(N = sum(RR)), by = list(STAID, year(DATE))]
 # Produce all the available plots
 anRainfall[, list(Plot = list(annualPlot(year, N, STAID))), by = STAID]
 ```
+
+### Exercise 3: - Produce plots for other summary statistics
+
+-   Produce plots of the maximum number of consecutive rainfall events for each meteorological station and available year.
+
+-   Can you replace the station ID by the station name at the title of the plots?
