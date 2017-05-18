@@ -675,6 +675,15 @@ dygraph(annualSer, main = paste0("Annual rainfall series of station: ",statID)) 
   dyAxis("y", label = "Rainfall amount (mm)") %>% dyAxis("x", label = "Year")
 ```
 
+<<<<<<< HEAD
+=======
+    ## PhantomJS not found. You can install it with webshot::install_phantomjs(). If it is installed, please make sure the phantomjs executable can be found via the PATH variable.
+
+<!--html_preserve-->
+
+<script type="application/json" data-for="htmlwidget-9d9923b83d7416c92d8d">{"x":{"attrs":{"axes":{"x":{"pixelsPerLabel":60},"y":[]},"title":"Annual rainfall series of station: 229","labels":["year","N"],"legend":"auto","retainDateWindow":false,"ylabel":"Rainfall amount (mm)","xlabel":"Year"},"annotations":[],"shadings":[],"events":[],"format":"numeric","data":[[1955,1956,1957,1958,1959,1960,1961,1962,1963,1964,1965,1966,1967,1968,1969,1970,1971,1972,1973,1974,1975,1976,1977,1978,1979,1980,1981,1982,1983,1984,1985,1986,1987,1988,1989,1990,1991,1992,1993,1994,1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017],[5735,5274,4121,4666,4552,7180,5403,5991,7171,3717,5538,5265,4561,4907,7322,4301,4825,5405,2804,2743,4497,6433,5510,5840,7194,3540,3681,3086,4686,5124,4262,3985,5414,4441,7505,3085,3028,3873,4047,3269,4140,6352,7369,3341,3866,5640,4911,4615,4761,3281,2288,4521,3148,4310,4360,7743,4766,3176,5124,4589,3093,4483,1316]]},"evals":[],"jsHooks":[]}</script>
+<!--/html_preserve-->
+>>>>>>> 2549fc2665737742fa55fb74f75697d2278c6410
 We can add more features in the previous plot:
 
 ``` r
@@ -684,6 +693,13 @@ dygraph(annualSer, main = paste0("Annual rainfall series of station: ",statID)) 
   dyRangeSelector() %>% dyOptions(fillGraph = TRUE, fillAlpha = 0.4)
 ```
 
+<<<<<<< HEAD
+=======
+<!--html_preserve-->
+
+<script type="application/json" data-for="htmlwidget-1ee469ea86bfa305804e">{"x":{"attrs":{"axes":{"x":{"pixelsPerLabel":60,"drawAxis":true},"y":{"drawAxis":true}},"title":"Annual rainfall series of station: 229","labels":["year","N"],"legend":"auto","retainDateWindow":false,"ylabel":"Rainfall amount (mm)","xlabel":"Year","showRangeSelector":true,"rangeSelectorHeight":40,"rangeSelectorPlotFillColor":" #A7B1C4","rangeSelectorPlotStrokeColor":"#808FAB","interactionModel":"Dygraph.Interaction.defaultModel","stackedGraph":false,"fillGraph":true,"fillAlpha":0.4,"stepPlot":false,"drawPoints":false,"pointSize":1,"drawGapEdgePoints":false,"connectSeparatedPoints":false,"strokeWidth":1,"strokeBorderColor":"white","colorValue":0.5,"colorSaturation":1,"includeZero":false,"drawAxesAtZero":false,"logscale":false,"axisTickSize":3,"axisLineColor":"black","axisLineWidth":0.3,"axisLabelColor":"black","axisLabelFontSize":14,"axisLabelWidth":60,"drawGrid":true,"gridLineWidth":0.3,"rightGap":5,"digitsAfterDecimal":2,"labelsKMB":false,"labelsKMG2":false,"labelsUTC":false,"maxNumberWidth":6,"animatedZooms":false,"mobileDisableYTouch":true},"annotations":[],"shadings":[],"events":[],"format":"numeric","data":[[1955,1956,1957,1958,1959,1960,1961,1962,1963,1964,1965,1966,1967,1968,1969,1970,1971,1972,1973,1974,1975,1976,1977,1978,1979,1980,1981,1982,1983,1984,1985,1986,1987,1988,1989,1990,1991,1992,1993,1994,1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017],[5735,5274,4121,4666,4552,7180,5403,5991,7171,3717,5538,5265,4561,4907,7322,4301,4825,5405,2804,2743,4497,6433,5510,5840,7194,3540,3681,3086,4686,5124,4262,3985,5414,4441,7505,3085,3028,3873,4047,3269,4140,6352,7369,3341,3866,5640,4911,4615,4761,3281,2288,4521,3148,4310,4360,7743,4766,3176,5124,4589,3093,4483,1316]],"fixedtz":false,"tzone":""},"evals":["attrs.interactionModel"],"jsHooks":[]}</script>
+<!--/html_preserve-->
+>>>>>>> 2549fc2665737742fa55fb74f75697d2278c6410
 In the following example we will compute a chart for each meteorological station using `data.table`:
 
 ``` r
@@ -708,3 +724,19 @@ anRainfall <- envDat[Q_RR != 9, list(N = sum(RR)), by = list(STAID, year(DATE))]
 # Produce all the available plots
 anRainfall[, list(Plot = list(annualPlot(year, N, STAID))), by = STAID]
 ```
+<<<<<<< HEAD
+=======
+
+    ##      STAID       Plot
+    ##   1:   229 <dygraphs>
+    ##   2:   230 <dygraphs>
+    ##   3:   231 <dygraphs>
+    ##   4:   232 <dygraphs>
+    ##   5:   233 <dygraphs>
+    ##  ---                 
+    ## 196: 11346 <dygraphs>
+    ## 197: 11347 <dygraphs>
+    ## 198: 11348 <dygraphs>
+    ## 199: 11382 <dygraphs>
+    ## 200: 11383 <dygraphs>
+>>>>>>> 2549fc2665737742fa55fb74f75697d2278c6410
