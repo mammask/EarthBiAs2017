@@ -1,4 +1,4 @@
-Introduction to large data management using `data.table` and `sparklyr` <br>
+Introduction to large data management using `data.table`<br>
 ================
 Kostas Mammas, Statistical Programmer <br> mail <mammaskon@gmail.com> <br>
 EarthBiAs2017, Rhodes Island, Greece
@@ -20,8 +20,9 @@ EarthBiAs2017, Rhodes Island, Greece
     -   [Environmental indices with `data.table`](#environmental-indices-with-data.table)
         -   [Number of days with "extreme" rainfall events](#number-of-days-with-extreme-rainfall-events)
         -   [Maximum number of consecutive rainfall events](#maximum-number-of-consecutive-rainfall-events)
-        -   [Standardized Precipitation Index (SPI)](#standardized-precipitation-index-spi)
         -   [Exercise 2: Compute the maximum number of extreme consecutive rainfall events](#exercise-2-compute-the-maximum-number-of-extreme-consecutive-rainfall-events)
+-   [Lecture 2: Visualization of environmental rainfall series](#lecture-2-visualization-of-environmental-rainfall-series)
+    -   [Visualization of rainfall series](#visualization-of-rainfall-series)
 
 Introduction
 ============
@@ -584,26 +585,128 @@ envDat[Q_RR != 9, {extrVal     = quantile(RR[RR>0], probs = 0.9)[[1]]
 
 ### Maximum number of consecutive rainfall events
 
+In the following example, we compute the maxmimum number of consecutive rainfall days for each station and available year.
+
 ``` r
-# Compute consecutive number of daily rainfall events per station
+# Compute maximum number of consecutive daily rainfall events per station
 # Temporary variables: idx        - indexing days with rainfall
 #                      diff       - find if the current day and the next day are days with rainfall
 #                      lagdiff    - shift series on position
 #                      startPoint - create a starting point
-consDays <- envDat[, {idx        = 1*(RR>0);
-                      diff       = shift(x = idx, fill = 0, type = "lead", n=1) - idx;
-                      lagdiff    = c(0,diff[-.N])
-                      startPoint = 1*(lagdiff<0)
-                      list(DATE  = DATE,
-                           RR    = RR,
-                           group =cumsum(startPoint))},
-                      by = list(STAID, year(DATE))
-                  ][RR != 0, .N, by = list(STAID, year, group)][, list(Max = max(N)),
+envDat[, {idx        = 1*(RR>0);
+          diff       = shift(x = idx, fill = 0, type = "lead", n=1) - idx;
+          lagdiff    = c(0,diff[-.N])
+          startPoint = 1*(lagdiff<0)
+          list(DATE  = DATE,
+               RR    = RR,
+               group =cumsum(startPoint))},
+          by = list(STAID, year(DATE))
+      ][RR != 0, .N, by = list(STAID, year, group)][, list(Max = max(N)),
                                                                 by = list(STAID, year)]
 ```
 
-### Standardized Precipitation Index (SPI)
+    ##       STAID year Max
+    ##    1:   229 1955  10
+    ##    2:   229 1956   9
+    ##    3:   229 1957   6
+    ##    4:   229 1958  13
+    ##    5:   229 1959   6
+    ##   ---               
+    ## 9367: 11383 2013  10
+    ## 9368: 11383 2014   7
+    ## 9369: 11383 2015   5
+    ## 9370: 11383 2016   6
+    ## 9371: 11383 2017  59
+
+This example can be easily extended so as to compute the number of consecutive days per station, year and month.
+
+``` r
+# Compute maximum number of consecutive daily rainfall events per station
+# Temporary variables: idx        - indexing days with rainfall
+#                      diff       - find if the current day and the next day are days with rainfall
+#                      lagdiff    - shift series one position
+#                      startPoint - create a starting point
+envDat[, {idx        = 1*(RR>0);
+          diff       = shift(x = idx, fill = 0, type = "lead", n=1) - idx;
+          lagdiff    = c(0,diff[-.N])
+          startPoint = 1*(lagdiff<0)
+          list(DATE  = DATE,
+               RR    = RR,
+               group =cumsum(startPoint))},
+          by = list(STAID, year(DATE), month(DATE))
+      ][RR > 0, .N, by = list(STAID, year, month, group)][, list(Max = max(N)),
+                                                                by = list(STAID, year, month)]
+```
+
+    ##        STAID year month Max
+    ##     1:   229 1955     1   6
+    ##     2:   229 1955     2   5
+    ##     3:   229 1955     3   3
+    ##     4:   229 1955     4   1
+    ##     5:   229 1955     5   4
+    ##    ---                     
+    ## 95194: 11383 2016     8   1
+    ## 95195: 11383 2016     9   2
+    ## 95196: 11383 2016    10   2
+    ## 95197: 11383 2016    11   6
+    ## 95198: 11383 2016    12   1
+
+Also, this example can be easily extended in order to compute the maximum number of consecutive drought days.
 
 ### Exercise 2: Compute the maximum number of extreme consecutive rainfall events
 
 You will need to count the maximium number of consecutive extreme rainfall events by station and by year considering that an extreme rainfall event is a record with value greater than the 90% of the distribution of daily rainfall of each station and year.
+
+Lecture 2: Visualization of environmental rainfall series
+=========================================================
+
+Visualization of rainfall series
+--------------------------------
+
+In the following example we compute the annual rainfall amount for a specific meteorological station:
+
+``` r
+# Load dygraphs
+library(dygraphs)
+statID    <- envDat[,unique(STAID)][1]
+annualSer <- envDat[STAID == statID & Q_RR != 9, list(N = sum(RR)), by = year(DATE)]
+# Prodice interactive plot of annual rainfall series
+dygraph(annualSer, main = paste0("Annual rainfall series of station: ",statID)) %>%
+  dyAxis("y", label = "Rainfall amount (mm)") %>% dyAxis("x", label = "Year")
+```
+
+    ## PhantomJS not found. You can install it with webshot::install_phantomjs(). If it is installed, please make sure the phantomjs executable can be found via the PATH variable.
+
+We can add more features in the previous plot:
+
+``` r
+# Produce interactive plot of annual rainfall series
+dygraph(annualSer, main = paste0("Annual rainfall series of station: ",statID)) %>%
+  dyAxis("y", label = "Rainfall amount (mm)") %>% dyAxis("x", label = "Year") %>% 
+  dyRangeSelector() %>% dyOptions(fillGraph = TRUE, fillAlpha = 0.4)
+```
+
+In the following example we will compute a chart for each meteorological station using `data.table`:
+
+``` r
+# Function to produce plot of annual rainfall based on the station ID, year and rainfall amount
+annualPlot <- function(year, N, ID){
+  
+  # function name: annualPlot
+  #       purpose: to create annual rainfall series plots for each meteorological station
+  #        inputs: year   - a vector with the available years
+  #                N      - a vector with the annual rainfall series
+  #                ID     - the station ID
+  metDat <- data.table(year, N)
+  p <- dygraph(metDat, main = paste0("Annual rainfall series of station: ",ID)) %>%
+        dyAxis("y", label = "Rainfall amount (mm)") %>% dyAxis("x", label = "Year") %>% 
+        dyRangeSelector() %>% dyOptions(fillGraph = TRUE, fillAlpha = 0.4)
+  
+  return(p)
+}
+
+# Produce annual rainfall series
+anRainfall <- envDat[Q_RR != 9, list(N = sum(RR)), by = list(STAID, year(DATE))]
+# Produce all the available plots
+anRainfall[, list(Plot = list(annualPlot(year, N, STAID))), by = STAID]
+```
