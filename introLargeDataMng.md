@@ -1,4 +1,4 @@
-Introduction to large data management using `data.table` <br>
+Introduction to large data management using `data.table` and `sparklyr` <br>
 ================
 Kostas Mammas, Statistical Programmer <br> mail <mammaskon@gmail.com> <br>
 EarthBiAs2017, Rhodes Island, Greece
@@ -16,9 +16,12 @@ EarthBiAs2017, Rhodes Island, Greece
     -   [Special Symbols](#special-symbols)
         -   [`SD`](#sd)
         -   [`.N`](#n)
-    -   [Exercise 1: Summary statistics](#exercise-1-summary-statistics)
-    -   [Creating environmental indices with `data.table`](#creating-environmental-indices-with-data.table)
+        -   [Exercise 1: Summary statistics](#exercise-1-summary-statistics)
+    -   [Environmental indices with `data.table`](#environmental-indices-with-data.table)
         -   [Number of days with "extreme" rainfall events](#number-of-days-with-extreme-rainfall-events)
+        -   [Maximum number of consecutive rainfall events](#maximum-number-of-consecutive-rainfall-events)
+        -   [Standardized Precipitation Index (SPI)](#standardized-precipitation-index-spi)
+        -   [Exercise 2: Compute the maximum number of extreme consecutive rainfall events](#exercise-2-compute-the-maximum-number-of-extreme-consecutive-rainfall-events)
 
 Introduction
 ============
@@ -488,7 +491,7 @@ envDat[Q_RR !=9, lapply(.SD, min), .SDcols = c("RR", "Q_RR"), by = "STAID"]
 
 ### `.N`
 
-`.N` is an integer, length 1, containing the number of rows in the group. The column that is named as N and not as .NL
+`.N` is a special in-built variable that holds the number of observations in the current group. When we group by`origin`, `.N` returns the number of rows of the dataset:
 
 ``` r
 # Return the number of records per station
@@ -508,8 +511,7 @@ envDat[,.SD[1:(.N-1)], .SDcols = c("STAID","DATE", "RR")]
 envDat[,.SD[1:(.N-1)], .SDcols = c("STAID","DATE", "RR"), by = "STAID"]
 ```
 
-Exercise 1: Summary statistics
-------------------------------
+### Exercise 1: Summary statistics
 
 As a first task you will have to pick randomly 10 meteorological stations and compute the following metrics:
 
@@ -517,12 +519,12 @@ As a first task you will have to pick randomly 10 meteorological stations and co
 -   Compute the number of missing records per station
 -   Which is the month with the highest number of missing values per station?
 
-Creating environmental indices with `data.table`
-------------------------------------------------
+Environmental indices with `data.table`
+---------------------------------------
 
 ### Number of days with "extreme" rainfall events
 
-Extreme rainfall event is defined as a daily rainfall record exceeding a specific rainfall amount. In this case, we calculate the probability distribution of the daily rainfall series and we define extreme records those who exceed the 90% of the values.
+Extreme rainfall event is defined as a daily rainfall record exceeding a specific rainfall amount. In this case, we calculate the probability distribution of the daily rainfall series and we define extreme records those which exceed the 90% of the values.
 
 ``` r
 # Calculate extreme rainfall events
@@ -579,3 +581,29 @@ envDat[Q_RR != 9, {extrVal     = quantile(RR[RR>0], probs = 0.9)[[1]]
     ## 8689: 11383 2014 13
     ## 8690: 11383 2015  9
     ## 8691: 11383 2016 10
+
+### Maximum number of consecutive rainfall events
+
+``` r
+# Compute consecutive number of daily rainfall events per station
+# Temporary variables: idx        - indexing days with rainfall
+#                      diff       - find if the current day and the next day are days with rainfall
+#                      lagdiff    - shift series on position
+#                      startPoint - create a starting point
+consDays <- envDat[, {idx        = 1*(RR>0);
+                      diff       = shift(x = idx, fill = 0, type = "lead", n=1) - idx;
+                      lagdiff    = c(0,diff[-.N])
+                      startPoint = 1*(lagdiff<0)
+                      list(DATE  = DATE,
+                           RR    = RR,
+                           group =cumsum(startPoint))},
+                      by = list(STAID, year(DATE))
+                  ][RR != 0, .N, by = list(STAID, year, group)][, list(Max = max(N)),
+                                                                by = list(STAID, year)]
+```
+
+### Standardized Precipitation Index (SPI)
+
+### Exercise 2: Compute the maximum number of extreme consecutive rainfall events
+
+You will need to count the maximium number of consecutive extreme rainfall events by station and by year considering that an extreme rainfall event is a record with value greater than the 90% of the distribution of daily rainfall of each station and year.
