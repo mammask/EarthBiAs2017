@@ -675,8 +675,6 @@ dygraph(annualSer, main = paste0("Annual rainfall series of station: ",statID)) 
   dyAxis("y", label = "Rainfall amount (mm)") %>% dyAxis("x", label = "Year")
 ```
 
-    ## PhantomJS not found. You can install it with webshot::install_phantomjs(). If it is installed, please make sure the phantomjs executable can be found via the PATH variable.
-
 We can add more features in the previous plot:
 
 ``` r
