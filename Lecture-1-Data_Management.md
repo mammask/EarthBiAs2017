@@ -823,7 +823,7 @@ statID    <- envDat[,unique(STAID)][1]
 annualSer <- envDat[STAID == statID & Q_RR != 9, list(N = sum(RR)), by = year(DATE)]
 # Produce interactive plot of annual rainfall series
 p <- dygraph(annualSer, main = paste0("Annual rainfall series of station: ",statID)) %>%
-  dyAxis("y", label = "Rainfall amount (mm)") %>% dyAxis("x", label = "Year")
+     dyAxis("y", label = "Rainfall amount (mm)") %>% dyAxis("x", label = "Year")
 # p 
 ```
 
@@ -848,10 +848,10 @@ annualPlot <- function(year, N, ID){
   #        inputs: year   - a vector with the available years
   #                N      - a vector with the annual rainfall series
   #                ID     - the station ID
-  metDat <- data.table(year, N)
-  p <- dygraph(metDat, main = paste0("Annual rainfall series of station: ",ID)) %>%
-        dyAxis("y", label = "Rainfall amount (mm)") %>% dyAxis("x", label = "Year") %>% 
-        dyRangeSelector() %>% dyOptions(fillGraph = TRUE, fillAlpha = 0.4)
+metDat <- data.table(year, N)
+p <- dygraph(metDat, main = paste0("Annual rainfall series of station: ",ID)) %>%
+     dyAxis("y", label = "Rainfall amount (mm)") %>% dyAxis("x", label = "Year") %>% 
+     dyRangeSelector() %>% dyOptions(fillGraph = TRUE, fillAlpha = 0.4)
   
   return(p)
 }
