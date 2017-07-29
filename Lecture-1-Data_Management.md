@@ -5,7 +5,6 @@ EarthBiAs2017, Rhodes Island, Greece
 
 -   [Introduction](#introduction)
 -   [Understanding the data structure](#understanding-the-data-structure)
--   [Lecture-1: Introduction to `data.table`](#lecture-1-introduction-to-data.table)
     -   [Data import](#data-import)
     -   [Create new variables](#create-new-variables)
     -   [Managing formats](#managing-formats)
@@ -22,7 +21,7 @@ EarthBiAs2017, Rhodes Island, Greece
         -   [Number of days with "extreme" rainfall events](#number-of-days-with-extreme-rainfall-events)
         -   [Maximum number of consecutive rainfall events](#maximum-number-of-consecutive-rainfall-events)
         -   [Exercise 2: Compute the maximum number of extreme consecutive rainfall events](#exercise-2-compute-the-maximum-number-of-extreme-consecutive-rainfall-events)
--   [Lecture 2: Visualization of environmental rainfall series](#lecture-2-visualization-of-environmental-rainfall-series)
+-   [Visualization of environmental rainfall series](#visualization-of-environmental-rainfall-series)
     -   [Visualization of rainfall series - Annual rainfall amount](#visualization-of-rainfall-series---annual-rainfall-amount)
         -   [Exercise 3: - Produce plots for other summary statistics](#exercise-3---produce-plots-for-other-summary-statistics)
     -   [Calculation of annual rainfall trends for a specific station](#calculation-of-annual-rainfall-trends-for-a-specific-station)
@@ -86,9 +85,6 @@ The dataset with the available meteorological stations consists of 9 columns:
 -   **latUpd**: Updated format of station latitude
 -   **longUpd**: Updated format of station longitude
 -   **LatLong**: Combined format of latitude and longitude
-
-Lecture-1: Introduction to `data.table`
-=======================================
 
 Data import
 -----------
@@ -812,8 +808,8 @@ Also, this example can be easily extended in order to compute the maximum number
 
 You will need to count the maximium number of consecutive extreme rainfall events by station and by year considering that an extreme rainfall event is a record with value greater than the 90% of the distribution of daily rainfall of each station and year.
 
-Lecture 2: Visualization of environmental rainfall series
-=========================================================
+Visualization of environmental rainfall series
+==============================================
 
 Visualization of rainfall series - Annual rainfall amount
 ---------------------------------------------------------
