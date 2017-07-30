@@ -1,9 +1,10 @@
-Big Data Analysis using `sparklyr` <br>
+Big data management using `sparklyr` <br>
 ================
 Kostas Mammas, Statistical Programmer <br> mail <mammaskon@gmail.com> <br>
 EarthBiAs2017, Rhodes Island, Greece
 
--   [Introduction](#introduction)
+-   [Introduction to `sparklyr`](#introduction-to-sparklyr)
+    -   [Installation - Local Remote Apache Spark cluster](#installation---local-remote-apache-spark-cluster)
 
 <style type="text/css">
 
@@ -33,7 +34,32 @@ font-size: 12px
 }
 
 </style>
-Introduction
-============
+Introduction to `sparklyr`
+==========================
 
-Text
+**Apache Spark** is an open source parallel processing framework for running large-scale data analytics applications across clustered computers. It can handle both batch and real-time analytics and data processing workloads.
+
+**sparklyr** is an R interface to Apache Spark, a fast and general engine for big data processing. This package supports connecting to local and remote Apache Spark clusters, provides a 'dplyr' compatible back-end, and provides an interface to Spark's built-in machine learning algorithms
+
+Installation - Local Remote Apache Spark cluster
+------------------------------------------------
+
+As a first step you need to install **sparklyr** package from CRAN as follows:
+
+``` r
+# Install sparklyr package
+install.packages("sparklyr")
+```
+
+You need to install also **spark** to set up a Local Remote Apache Spark cluster:
+
+``` r
+# Load spark
+library("sparklyr")
+# Obtain spark available versions
+allVer <- spark_available_versions()
+# Obtain last version
+latVer <- allVer[nrow(allVer),"spark"]
+# Install last version of spark
+spark_install(version = latVer)
+```
