@@ -66,3 +66,4 @@ latVer <- allVer[nrow(allVer),"spark"]
 spark_install(version = latVer)
 ```
 
+## Useful functions

@@ -5,6 +5,7 @@ EarthBiAs2017, Rhodes Island, Greece
 
 -   [Introduction to `sparklyr`](#introduction-to-sparklyr)
     -   [Installation - Local Remote Apache Spark cluster](#installation---local-remote-apache-spark-cluster)
+    -   [Useful functions](#useful-functions)
 
 <style type="text/css">
 
@@ -63,3 +64,6 @@ latVer <- allVer[nrow(allVer),"spark"]
 # Install last version of spark
 spark_install(version = latVer)
 ```
+
+Useful functions
+----------------
