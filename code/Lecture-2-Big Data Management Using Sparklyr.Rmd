@@ -1,5 +1,5 @@
 ---
-title: "Big data management using `sparklyr` <br>"
+title: "Big data processing using `sparklyr` <br>"
 author: "Kostas Mammas, Statistical Programmer <br> mail mammaskon@gmail.com <br>"
 date: "EarthBiAs2017, Rhodes Island, Greece"
 output:
@@ -42,7 +42,7 @@ font-size: 12px
 
 **Apache Spark** is an open source parallel processing framework for running large-scale data analytics applications across clustered computers. It can handle both batch and real-time analytics and data processing workloads.
 
-**sparklyr** is an R interface to Apache Spark, a fast and general engine for big data processing. This package supports connecting to local and remote Apache Spark clusters, provides a 'dplyr' compatible back-end, and provides an interface to Spark's built-in machine learning algorithms
+**sparklyr** is an R interface to Apache Spark, a fast and general engine for big data processing. This package supports connecting to local and remote Apache Spark clusters, provides a **dplyr** compatible back-end, and provides an interface to Spark's built-in machine learning algorithms
 
 ## Installation - Local Remote Apache Spark cluster
 
@@ -56,14 +56,35 @@ install.packages("sparklyr")
 You need to install also **spark** to set up a Local Remote Apache Spark cluster:
 
 ```{r,eval=FALSE}
-# Load spark
+# Load sparklyr
 library("sparklyr")
-# Obtain spark available versions
+# Obtain available versions of spark
 allVer <- spark_available_versions()
-# Obtain last version
+# Obtain latest version
 latVer <- allVer[nrow(allVer),"spark"]
-# Install last version of spark
+# Install latest version of spark
 spark_install(version = latVer)
 ```
 
-## Useful functions
+## Useful `sparklyr` functions
+
+- `sdf_copy_to`: Copy an object into Spark, and return an R object wrapping the copied object (typically, a Spark DataFrame).
+
+**Example**
+
+```{r,eval=TRUE}
+# Load sparklyr
+library("sparklyr")
+# Connect to Local Remote Apache Spark cluster
+sc <- spark_connect(master = "local")
+# Generate a table of radom numebers
+cusTabl <- data.frame(matrix(rnorm(100), ncol = 5))
+# Copy R object into spark
+md <- sparklyr::sdf_copy_to(sc          = sc,
+                            x           = cusTabl,
+                            name        = "cusTabl",
+                            memory      = TRUE,
+                            repartition = 0L,
+                            overwrite   = TRUE)
+```
+
