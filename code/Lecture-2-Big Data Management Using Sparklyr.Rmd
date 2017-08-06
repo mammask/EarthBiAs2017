@@ -1,5 +1,5 @@
 ---
-title: "Big data processing using `sparklyr` <br>"
+title: "Big data analysis using `sparklyr` <br>"
 author: "Kostas Mammas, Statistical Programmer <br> mail: mammaskon@gmail.com <br>"
 date: "EarthBiAs2017, Rhodes Island, Greece"
 output:

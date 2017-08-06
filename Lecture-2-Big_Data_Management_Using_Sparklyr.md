@@ -1,4 +1,4 @@
-Big data processing using `sparklyr` <br>
+Big data analysis using `sparklyr` <br>
 ================
 Kostas Mammas, Statistical Programmer <br> mail: <mammaskon@gmail.com> <br>
 EarthBiAs2017, Rhodes Island, Greece
