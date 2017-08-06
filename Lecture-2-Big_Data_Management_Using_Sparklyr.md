@@ -17,8 +17,8 @@ EarthBiAs2017, Rhodes Island, Greece
         -   [`ft_quantile_discretizer`](#ft_quantile_discretizer)
         -   [`ft_sql_transformer`](#ft_sql_transformer)
     -   [Environmental rainfall indices using `sparklyr`](#environmental-rainfall-indices-using-sparklyr)
-        -   [Number of consecutive rainfall events for each meteorological station across Europe](#number-of-consecutive-rainfall-events-for-each-meteorological-station-across-europe)
-        -   [Number of extreme consecutive rainfall events for each meteorological station across Europe](#number-of-extreme-consecutive-rainfall-events-for-each-meteorological-station-across-europe)
+        -   [Number of consecutive rainfall events for all European stations](#number-of-consecutive-rainfall-events-for-all-european-stations)
+        -   [Number of extreme consecutive rainfall events for all European stations](#number-of-extreme-consecutive-rainfall-events-for-all-european-stations)
     -   [Useful functions](#useful-functions)
         -   [Read Spark DataFrame](#read-spark-dataframe)
     -   [Appendix](#appendix)
@@ -108,6 +108,7 @@ Compute the approximate quantiles for a continuous variable to some relative err
 ``` r
 # Filters station 229
 tbl %>% filter(staid == 229 & rr != -9999) %>% group_by(STAID, Q_RR) %>%
+  # Compute quantile
   sdf_quantile(rr, probabilities = c(0, 0.25, 0.5, 0.75, 0.90,  1))
 ```
 
@@ -148,9 +149,9 @@ tbl %>% filter(q_rr != 9) %>%
 Environmental rainfall indices using `sparklyr`
 -----------------------------------------------
 
-### Number of consecutive rainfall events for each meteorological station across Europe
+### Number of consecutive rainfall events for all European stations
 
-### Number of extreme consecutive rainfall events for each meteorological station across Europe
+### Number of extreme consecutive rainfall events for all European stations
 
 Useful functions
 ----------------

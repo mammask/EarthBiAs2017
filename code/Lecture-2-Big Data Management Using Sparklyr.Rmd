@@ -93,6 +93,7 @@ Compute the approximate quantiles for a continuous variable to some relative err
 ```{r, eval = FALSE}
 # Filters station 229
 tbl %>% filter(staid == 229 & rr != -9999) %>% group_by(STAID, Q_RR) %>%
+  # Compute quantile
   sdf_quantile(rr, probabilities = c(0, 0.25, 0.5, 0.75, 0.90,  1))
 ```
 
