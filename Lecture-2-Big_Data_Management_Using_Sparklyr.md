@@ -4,25 +4,26 @@ Kostas Mammas, Statistical Programmer <br> mail: <mammaskon@gmail.com> <br>
 EarthBiAs2017, Rhodes Island, Greece
 
 -   [Introduction to `sparklyr`](#introduction-to-sparklyr)
-    -   [Installation - Local Remote Apache Spark cluster](#installation---local-remote-apache-spark-cluster)
-    -   [`sdf_` family functions](#sdf_-family-functions)
-        -   [`sdf_copy_to`](#sdf_copy_to)
-        -   [`sdf_num_partitions`](#sdf_num_partitions)
-        -   [`sdf_pivot`](#sdf_pivot)
-        -   [`sdf_quantile`](#sdf_quantile)
-        -   [`sdf_sort`](#sdf_sort)
-    -   [`ft_` family functions](#ft_-family-functions)
-        -   [`ft_binarizer`](#ft_binarizer)
-        -   [`ft_bucketizer`](#ft_bucketizer)
-        -   [`ft_quantile_discretizer`](#ft_quantile_discretizer)
-        -   [`ft_sql_transformer`](#ft_sql_transformer)
-    -   [Environmental rainfall indices using `sparklyr`](#environmental-rainfall-indices-using-sparklyr)
-        -   [Number of consecutive rainfall events for all European stations](#number-of-consecutive-rainfall-events-for-all-european-stations)
-        -   [Number of extreme consecutive rainfall events for all European stations](#number-of-extreme-consecutive-rainfall-events-for-all-european-stations)
-    -   [Useful functions](#useful-functions)
-        -   [Read Spark DataFrame](#read-spark-dataframe)
-    -   [Appendix](#appendix)
-        -   [Date manipulation on **spark** using **HIVE-SQL**](#date-manipulation-on-spark-using-hive-sql)
+    -   [What is the benefit of using `sparklyr`?](#what-is-the-benefit-of-using-sparklyr)
+-   [Installation - Local Remote Apache Spark cluster](#installation---local-remote-apache-spark-cluster)
+-   [`sdf_` family functions](#sdf_-family-functions)
+    -   [`sdf_copy_to`](#sdf_copy_to)
+    -   [`sdf_num_partitions`](#sdf_num_partitions)
+    -   [`sdf_pivot`](#sdf_pivot)
+    -   [`sdf_quantile`](#sdf_quantile)
+    -   [`sdf_sort`](#sdf_sort)
+-   [`ft_` family functions](#ft_-family-functions)
+    -   [`ft_binarizer`](#ft_binarizer)
+    -   [`ft_bucketizer`](#ft_bucketizer)
+    -   [`ft_quantile_discretizer`](#ft_quantile_discretizer)
+    -   [`ft_sql_transformer`](#ft_sql_transformer)
+-   [Environmental rainfall indices using `sparklyr`](#environmental-rainfall-indices-using-sparklyr)
+    -   [Number of consecutive rainfall events for all European stations](#number-of-consecutive-rainfall-events-for-all-european-stations)
+    -   [Number of extreme consecutive rainfall events for all European stations](#number-of-extreme-consecutive-rainfall-events-for-all-european-stations)
+-   [Useful functions](#useful-functions)
+    -   [Read Spark DataFrame](#read-spark-dataframe)
+-   [Appendix](#appendix)
+    -   [Date manipulation on **spark** using **HIVE-SQL**](#date-manipulation-on-spark-using-hive-sql)
 
 Introduction to `sparklyr`
 ==========================
@@ -31,8 +32,11 @@ Introduction to `sparklyr`
 
 **sparklyr** is an R interface to Apache Spark, a fast and general engine for big data processing. This package supports connecting to local and remote Apache Spark clusters, provides a **dplyr** compatible back-end, and provides an interface to Spark's built-in machine learning algorithms
 
+What is the benefit of using `sparklyr`?
+----------------------------------------
+
 Installation - Local Remote Apache Spark cluster
-------------------------------------------------
+================================================
 
 As a first step you need to install **sparklyr** package from CRAN as follows:
 
@@ -55,11 +59,12 @@ spark_install(version = latVer)
 ```
 
 `sdf_` family functions
------------------------
+=======================
 
 The family of functions prefixed with sdf\_ generally access the Scala Spark DataFrame API directly, as opposed to the dplyr interface which uses Spark SQL. These functions will ’force’ any pending SQL in a dplyr pipeline, such that the resulting tbl\_spark object returned will no longer have the attached ’lazy’ SQL operations
 
-### `sdf_copy_to`
+`sdf_copy_to`
+-------------
 
 `sdf_copy_to`: Copy an object into Spark, and return an R object wrapping the copied object (typically, a Spark DataFrame).
 
@@ -80,7 +85,8 @@ tbl <- sparklyr::sdf_copy_to(sc          = sc,
 tbl
 ```
 
-### `sdf_num_partitions`
+`sdf_num_partitions`
+--------------------
 
 Gets number of partitions of a Spark DataFrame:
 
@@ -90,7 +96,8 @@ numPart <- sdf_num_partitions(tbl)
 numPart
 ```
 
-### `sdf_pivot`
+`sdf_pivot`
+-----------
 
 Perform **reshape2::dcast** using Spark DataFrame:
 
@@ -101,7 +108,8 @@ tbl %>% group_by(STAID, Q_RR) %>% summarise(N = n()) %>%
   sdf_pivot(STAID ~ Q_RR, list(N = "sum"))
 ```
 
-### `sdf_quantile`
+`sdf_quantile`
+--------------
 
 Compute the approximate quantiles for a continuous variable to some relative error. In the following example we compute the quantiles of the daily rainfall amount for a specific station:
 
@@ -112,7 +120,8 @@ tbl %>% filter(staid == 229 & rr != -9999) %>% group_by(STAID, Q_RR) %>%
   sdf_quantile(rr, probabilities = c(0, 0.25, 0.5, 0.75, 0.90,  1))
 ```
 
-### `sdf_sort`
+`sdf_sort`
+----------
 
 Sort a Spark DataFrame by one or more columns, with each column sorted in ascending order.
 
@@ -121,11 +130,12 @@ tbl %>% sdf_sort(columns = c("staid","date"))
 ```
 
 `ft_` family functions
-----------------------
+======================
 
 The family of functions prefixed with ft\_ work as feature transformer functions.
 
-### `ft_binarizer`
+`ft_binarizer`
+--------------
 
 Apply thresholding to a column, such that values less than or equal to the threshold are assigned the value 0.0, and values greater than the threshold are assigned the value 1.0.
 
@@ -140,28 +150,35 @@ tbl %>% filter(q_rr != 9) %>%
     sdf_mutate(Event = ft_binarizer(rr, 0))
 ```
 
-### `ft_bucketizer`
+`ft_bucketizer`
+---------------
 
-### `ft_quantile_discretizer`
+`ft_quantile_discretizer`
+-------------------------
 
-### `ft_sql_transformer`
+`ft_sql_transformer`
+--------------------
 
 Environmental rainfall indices using `sparklyr`
------------------------------------------------
+===============================================
 
-### Number of consecutive rainfall events for all European stations
+Number of consecutive rainfall events for all European stations
+---------------------------------------------------------------
 
-### Number of extreme consecutive rainfall events for all European stations
+Number of extreme consecutive rainfall events for all European stations
+-----------------------------------------------------------------------
 
 Useful functions
-----------------
+================
 
-### Read Spark DataFrame
+Read Spark DataFrame
+--------------------
 
 Appendix
---------
+========
 
-#### Date manipulation on **spark** using **HIVE-SQL**
+Date manipulation on **spark** using **HIVE-SQL**
+-------------------------------------------------
 
 The current version of `sparklyr: 0.6.0` does not allow date manipulation using `dplyr`. In our case we can directly modify date using native **HIVE-SQL** functions. The following example converts date from integer format to date:
 
