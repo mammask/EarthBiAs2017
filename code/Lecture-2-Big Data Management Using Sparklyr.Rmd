@@ -132,7 +132,7 @@ Compute the approximate quantiles for a continuous variable to some relative err
 
 ```{r, eval = TRUE}
 # Filters station 229
-tbl %>% dplyr::filter(staid == 229 & rr != -9999) %>% dplyr::group_by(STAID, Q_RR) %>%
+tbl %>% dplyr::filter(staid == 229 & rr != -9999) %>% dplyr::group_by(staid) %>%
   # Compute quantile
   sparklyr::sdf_quantile("rr", probabilities = c(0, 0.25, 0.5, 0.75, 0.90,  1))
 ```
@@ -225,7 +225,7 @@ tbl %>% dplyr::filter(staid == 229 & rr != -9999L) %>%
 
 The same example can be implemented using `ggplot2`:
 
-```{r, eval = TRUE}
+```{r, eval = FALSE}
 library(ggplot2)
 # Select station 229 and filter out missing records
 tbl %>% dplyr::filter(staid == 229 & rr != -9999L) %>%
@@ -246,6 +246,8 @@ tbl %>% dplyr::filter(staid == 229 & rr != -9999L) %>%
 Calculate the annual number of days of extreme rainfall events per station and year using `sparklyr` and `dplyr` for all the Greek meteorological stations.
 
 ### Number of consecutive rainfall events for all European stations
+
+
 
 ### Number of extreme consecutive rainfall events for all European stations
 

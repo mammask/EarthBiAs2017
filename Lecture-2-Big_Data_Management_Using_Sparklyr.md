@@ -128,7 +128,7 @@ tbl %>% dplyr::group_by(STAID, Q_RR) %>% dplyr::summarise(N = n()) %>%
   sparklyr::sdf_pivot(STAID ~ Q_RR, list(N = "sum"))
 ```
 
-    ## # Source:   table<sparklyr_tmp_134955d50a93> [?? x 4]
+    ## # Source:   table<sparklyr_tmp_15e743c330ae> [?? x 4]
     ## # Database: spark_connection
     ##    STAID   `0`   `1`   `9`
     ##    <int> <dbl> <dbl> <dbl>
@@ -198,7 +198,7 @@ Compute the approximate quantiles for a continuous variable to some relative err
 
 ``` r
 # Filters station 229
-tbl %>% dplyr::filter(staid == 229 & rr != -9999) %>% dplyr::group_by(STAID, Q_RR) %>%
+tbl %>% dplyr::filter(staid == 229 & rr != -9999) %>% dplyr::group_by(staid) %>%
   # Compute quantile
   sparklyr::sdf_quantile("rr", probabilities = c(0, 0.25, 0.5, 0.75, 0.90,  1))
 ```
@@ -214,7 +214,7 @@ Sort a Spark DataFrame by one or more columns, with each column sorted in ascend
 tbl %>% sparklyr::sdf_sort(columns = c("staid","date"))
 ```
 
-    ## # Source:   table<sparklyr_tmp_1349bf9052> [?? x 5]
+    ## # Source:   table<sparklyr_tmp_15e73a686f0e> [?? x 5]
     ## # Database: spark_connection
     ##    staid souid       date    rr  q_rr
     ##    <int> <int>      <chr> <int> <int>
@@ -250,7 +250,7 @@ tbl %>% dplyr::filter(q_rr != 9L) %>%
     sparklyr::sdf_mutate(Event = ft_binarizer(rr, 0))
 ```
 
-    ## # Source:   table<sparklyr_tmp_134942872ca2> [?? x 6]
+    ## # Source:   table<sparklyr_tmp_15e77c47ae56> [?? x 6]
     ## # Database: spark_connection
     ##    staid souid       date  q_rr    rr Event
     ##    <int> <int>      <chr> <int> <dbl> <dbl>
@@ -283,7 +283,7 @@ tbl %>% dplyr::filter(q_rr != 9L) %>%
                               )
 ```
 
-    ## # Source:   table<sparklyr_tmp_13493989f6b7> [?? x 5]
+    ## # Source:   table<sparklyr_tmp_15e7693791d2> [?? x 5]
     ## # Database: spark_connection
     ##    staid `year(date)` `month(date)`    rr Bucket
     ##    <int>        <int>         <int> <dbl>  <dbl>
@@ -321,7 +321,7 @@ tbl %>% dplyr::filter(staid == 229 & rr != -9999L) %>%
       sparklyr::sdf_sort(columns = c("year(date)"))
 ```
 
-    ## # Source:   table<sparklyr_tmp_134921524445> [?? x 2]
+    ## # Source:   table<sparklyr_tmp_15e737bce647> [?? x 2]
     ## # Database: spark_connection
     ##    `year(date)`     N
     ##           <int> <dbl>
@@ -374,8 +374,6 @@ tbl %>% dplyr::filter(staid == 229 & rr != -9999L) %>%
             ggtitle("Annual Rainfall series of station: 229") + xlab("Year") +
               ylab("Annual Rainfall Amount (mm)")
 ```
-
-![](Lecture-2-Big_Data_Management_Using_Sparklyr_files/figure-markdown_github/unnamed-chunk-13-1.png)
 
 #### Exercise 3 - Number of days with "extreme" rainfall events
 
