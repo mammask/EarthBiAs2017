@@ -271,7 +271,6 @@ We can save time by running this function using a parallel processing approach:
 ``` r
 library(foreach)
 library(doParallel)
-
 cl <- makeCluster(3)
 registerDoParallel(cl)
 
