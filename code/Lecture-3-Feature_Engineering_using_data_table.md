@@ -1,0 +1,363 @@
+Feature Engineering using `data.table` <br>
+================
+Giorgos Kaiafas, PhD Researcher <br> mail: <georgios.kaiafas@uni.lu> <br> Kostas Mammas, Statistical Programmer <br> mail: <mammaskon@gmail.com> <br>
+EarthBiAs2017, Rhodes Island, Greece
+
+-   [Introduction](#introduction)
+    -   [ECA&D](#ecad)
+-   [Lecture workflow](#lecture-workflow)
+-   [Download environmental data using the `ECADownloader` tool](#download-environmental-data-using-the-ecadownloader-tool)
+    -   [Availability of stations](#availability-of-stations)
+-   [Selection of environmental variables for analysis](#selection-of-environmental-variables-for-analysis)
+-   [Challenges regarding data availability](#challenges-regarding-data-availability)
+-   [Data Loading in R](#data-loading-in-r)
+-   [A heuristic approach to impute missing values](#a-heuristic-approach-to-impute-missing-values)
+-   [Find the optimal period length of consecutive daily records](#find-the-optimal-period-length-of-consecutive-daily-records)
+-   [Feature engineering](#feature-engineering)
+
+Introduction
+------------
+
+### ECA&D
+
+ECA&D is a European Climate Assessment & Dataset project. Presented is information on changes in weather and climate extremes, as well as the daily dataset needed to monitor and analyse these extremes. ECA&D was initiated by the ECSN in 1998 and has received financial support from the EUMETNET and the European Commission. You can access the ECA&D website using the following [link](http://www.ecad.eu/).
+
+Lecture workflow
+----------------
+
+The purpose of this session is to fit a Machine Learning model to predict daily rainfall occurence using a set of environmental variables.
+
+We need to answer a set of questions before we start working on this task:
+
+1.  What type of information will be used?
+2.  How are we going to access this information?
+3.  What type of data cleaning techniques will be used in order to perform feature transformation?
+4.  Which environmental variables will be used in our modelling approach?
+5.  If we select 3 meteorological variables how are we going to gather this information in order to fita model to a particular meteorological station?
+
+In order to answer these questions we will follow the steps bresented below:
+
+1.  Obtain environmental daily rainfall records from ECA&D using the `ECADownloader` tool
+2.  Select variables of interest
+3.  Perform data cleaning/ transofrmation techniques using the `data.table` package
+4.  Select country/ stations that will be used to perform feature engineering
+5.  Find optimal period where a station has the available records for all the selected meteorological variables.
+
+Our goal is to create a dasatet in the following form:
+
+Download environmental data using the `ECADownloader` tool
+----------------------------------------------------------
+
+The `ECADownloader` is a set of functions built in `R` using `data.table` and provide functionalities when it comes to download specific daily environmental series from all the available meteorological stations in Europe.
+
+Using the following [link](https://github.com/mammask/ECADownloader) you can use the `ECADownloader` and obtain the environmental indices of interest.
+
+``` r
+# Load packages
+library(data.table)
+library(stringr)
+library(tcltk)
+
+# Define Path
+currPath <- "~/Documents/EarthBiAs2017"
+
+# Set current working directory
+setwd(currPath)
+
+# Define if dataset will be blended or nonblended
+blended   <- TRUE  
+
+# Define variables to transform
+metVarTbl <- data.table(metVar = c("DailyMaxTemp", "DailyMinTemp",
+                                   "DailyMeanTemp", "DailyPrecipAmount",
+                                   "DailyMeanSeaLVLPress","DailyCloudCover",
+                                   "DailyHumid", "DailySnowDepth", 
+                                   "DailySunShineDur","DailyMeanWindSpeed",
+                                   "DailyMaxWindGust","DailyWindDirection"),
+                        Include = c("yes", "yes","yes","yes","no","yes","yes",
+                                    "no","yes","yes","no","no"))
+
+# Keep selected
+metVarTbl <- metVarTbl[Include=="yes", metVar]
+print(metVarTbl)
+```
+
+In the next step we need to source the supporting functions script available in the ECADownload tool:
+
+``` r
+# Load supporting functions
+source("./ECADownloader/code/externalFunctions_v1a.R")
+```
+
+### Availability of stations
+
+The following function provides information about the list of the available meteorological stations per environmental variable of interest:
+
+``` r
+# Function to otain list of stations having the specific environmental variable
+availStatPerVar <- function(metVarID){
+  
+  # function name: availStatPerVar
+  #         input: metVarID - A vector indicating the meteorological variables of interest
+  #                (see ECADownloader for naming conventions)
+  #        output: availableStationsMap a data.table with the available stations
+  
+  tempDownloadPath <- paste0("./",metVarID,"/")
+  precipStat  <-  paste0("./",metVarID,"/stations.txt")
+  tempMapping <- data.table(read.table(precipStat, skip = 16 ,sep=",",
+                                       stringsAsFactors = FALSE, header=TRUE, quote=""))
+  
+  # Manipulate Longitude and Lattitude - Convert Degrees,minutes,seconds to decimal degrees 
+  tempMapping[,latUpd:=sapply(LAT,findLoc)][,longUpd:=sapply(LON,findLoc)]
+  tempMapping[,LatLong:=paste0(latUpd,":",longUpd)]
+  tempMapping <- tempMapping[!duplicated(LatLong)] # get rid off stations with duplicated locations
+  
+  # Find Available Stations with their names and their location
+  dataFileNames <- list.files(tempDownloadPath, pattern=".txt")
+  dataFileNames <- dataFileNames[!dataFileNames %in% c("elements.txt", "sources.txt","stations.txt")]
+  dataFileNamesIDs <- as.numeric(gsub(".txt","",
+                                      gsub(paste0(linkMap[VarName==metVarID,ID],
+                                                  "_STAID"),"",dataFileNames)
+                                      )
+                                 )
+  availableStationsMap <- data.table(STAID=dataFileNamesIDs)
+  availableStationsMap <- merge(availableStationsMap,
+                                tempMapping[,c("STAID",
+                                               "STANAME",
+                                               "CN",
+                                               "latUpd",
+                                               "longUpd",
+                                               "LatLong"), with=F],
+                                by=c("STAID"), all.y=TRUE)
+  availableStationsMap[,MetVar:=metVarID]
+  
+  cat("Available data of",metVarID," for ",length(unique(availableStationsMap$CN)),"countries\n")
+  
+  return(availableStationsMap)
+}
+```
+
+We can find the list of stations having daily precipitation rainfall records:
+
+``` r
+resTbl <- availStatPerVar(metVarID = "DailyPrecipAmount")
+print(resTbl)
+```
+
+This result can be extended to find the list of stations for the following environmental variables:
+
+1.  DailyMaxTemp
+2.  DailyMinTemp
+3.  DailyMeanTemp
+4.  DailyPrecipAmount
+5.  DailyCloudCover
+6.  DailyHumid
+7.  DailySunShineDur
+8.  DailyMeanWindSpeed
+
+``` r
+datList <- list()
+k <- 1
+for (metVarID in metVarTbl){
+  
+  print(paste0("Processing:",metVarID,"\n"))
+  datList[[k]] <- availStatPerVar(metVarID)
+  k <- k + 1 
+}
+overall <- rbindlist(datList)
+```
+
+Selection of environmental variables for analysis
+-------------------------------------------------
+
+We will use the following environmental variables:
+
+1.  Daily Precipitation Amount
+2.  Daily Mean Temperature
+3.  Daily Mean Humidity
+
+Challenges regarding data availability
+--------------------------------------
+
+One of the main challenges is whether a station has information about the 3 variables of interest. In this section we will identify which stations have this information:
+
+1.  Find stations with rainfall and precipitation records:
+
+``` r
+# Find station with Rainfall and Temperature Records
+rainMeanTemp <- overall[ MetVar == "DailyPrecipAmount",
+                         .(STAID)][ ,overall[ MetVar == "DailyMeanTemp",
+                                       .(STAID)],
+                             on = .(STAID = STAID), nomatch = 0L]
+```
+
+1.  Find stations with Rainfall, Temperature and Humidity Records:
+
+``` r
+# Find stations with Rainfall, Temperature and Humidity records
+rainMeanTempHumid <- rainMeanTemp[, overall[ MetVar == "DailyHumid", .(STAID)], 
+                                  on = .(STAID = STAID), nomatch = 0L]
+
+rainMeanTempHumid
+```
+
+1.  Find the country with the most stations having the 3 environmental variables
+
+``` r
+allStations <- unique(overall[STAID %in% 
+                                rainMeanTempHumid[, STAID] &
+                                MetVar %in% c("DailyPrecipAmount",
+                                              "DailyMeanTemp",
+                                              "DailyHumid")][,.(STAID,CN)])
+
+# Select Spanish Stations
+stationsToKeep <- allStations[CN == "ES", STAID]
+```
+
+You can visit the following [link](https://github.com/mammask/EarthBiAs2017/blob/master/Lecture-1-Data_Management.md) in order to improve your skills in `data.table` merge.
+
+Data Loading in R
+-----------------
+
+At this point we have dowloaded the data locally. As a next step we need to load the desired variables in R. For this reason we will run the following function:
+
+``` r
+# Obtain data in R using as input a set of environmental variables:
+obtainStationDat <- function(linkMap, metVarId, stationsToKeep){
+  
+  library(data.table)
+  library(stringr)
+  library(tcltk)
+  tempStat <- list()
+  tempDownloadPath <- linkMap[VarName == metVarId,downloadDatPath]
+  dataFileNames <- list.files(tempDownloadPath, pattern=".txt")
+  dataFileNames <- dataFileNames[!dataFileNames %in% 
+                                   c("elements.txt", "sources.txt","stations.txt")]
+  dataFileNamesMap <- data.table(FileName=dataFileNames)
+  stationsToKeep <- data.table(Filename = stationsToKeep)
+  stationsToKeep[, Filename := paste0(linkMap[VarName == metVarId, ID],"_STAID",
+                                      str_pad(string = Filename,
+                                              width = 6,
+                                              side = "left",
+                                              pad = "0"),".txt")]
+  
+  statToDownload <- dataFileNamesMap[FileName %in% stationsToKeep[,Filename], FileName]
+  
+  k <- 1
+  mypb <- tkProgressBar(title ="Percentage Complete: 0%", min=0,
+                        max=length(statToDownload), initial=0, width=400)
+  
+  for (tempFile_id in statToDownload){
+    setTkProgressBar(mypb, k, title=paste0("Percentage Complete: ",
+                                           round(k/length(statToDownload)*100,digits = 1),
+                                           "% ","Processing Data Read..."))
+    tempStat[[k]] <- data.table(read.table(paste0(tempDownloadPath,"/",tempFile_id)
+                                           ,skip=20, sep=",",header=TRUE, stringsAsFactors=FALSE))
+    
+    tempStat[[k]][,DATE:=as.Date(as.character(DATE), format("%Y%m%d"))]
+    tempStat[[k]][,Year:= year(DATE)]
+    tempStat[[k]][,Month:= month(DATE)]
+    tempStat[[k]][,VarName:=metVarId]
+    
+    k <- k + 1
+  }
+  close(mypb)
+  return(rbindlist(tempStat))
+}
+```
+
+We can save time by running this function using a parallel processing approach:
+
+``` r
+library(foreach)
+library(doParallel)
+
+cl <- makeCluster(3)
+registerDoParallel(cl)
+
+# Read on parallel the available stations
+allRes <- foreach(metVarId = c("DailyPrecipAmount",
+                               "DailyMeanTemp",
+                               "DailyHumid"), .verbose = T) %dopar% obtainStationDat(linkMap,
+                                                                                      metVarId,
+                                                                                      stationsToKeep
+                                                                                     )
+stopCluster(cl)
+allRes <- rbindlist(allRes)
+gc()
+```
+
+A heuristic approach to impute missing values
+---------------------------------------------
+
+There are several approaches to deal with the problem of missing values. These methods refer to multiple imputation techiques, deleting records with missing values, replacing with mean or median etc.
+
+In this exercise we impute maximum 5 records per month using the monthly mean. In cases where more than 5 records appear during a month, these records are excluded.
+
+``` r
+# Perform a data cleaning process in order to impute max 5 records per month
+# Replace values -9999 with NA
+allRes[RR == -9999, RR:= NA]
+
+# Compute Monthly Mean by Station month and environmental variable
+averageMapper <- allRes[, .(MonthlyMean = mean(RR, na.rm = T)), by = c("STAID","Year", "Month", "VarName")]
+
+# Find number of missing records per station month and meteorological varible 
+countNA  <- allRes[is.na(RR), .(CountNumNAs = .N), by =  c("STAID","Year", "Month", "VarName")]
+
+# Obtain count for each monthly mean
+resultDT      <- merge(averageMapper,countNA, all.x = T, by = c("STAID","Year", "Month", "VarName"))
+
+# Obtain results to original dataset
+allRes        <- merge(allRes,resultDT, all.x = T, by = c("STAID","Year", "Month", "VarName"))
+rm(averageMapper)
+rm(countNA)
+rm(resultDT)
+gc()
+
+# Replace missing recods with mean 
+allRes[, c("MonthlyMean","RR"):= lapply(.SD, as.numeric), .SDcols = c("MonthlyMean","RR")]
+
+allRes[is.na(RR) & !is.na(CountNumNAs) & CountNumNAs <= 5, RR:= MonthlyMean]
+
+# Ommit observations with more than 5 NAs during a monthly period
+allRes <- allRes[is.na(CountNumNAs) | CountNumNAs <= 5]
+
+# Find representtive stations with 3 meteorological variables
+repStat <- allRes[, .N, by = list(STAID, DATE)][N>2][order(-N)]
+
+# Update dataset by keeping stations with 3 available meteorological records
+allRes  <- allRes[repStat, on = .(STAID = STAID, DATE = DATE)]
+
+# Transform to wide format
+allRes <- data.table::dcast.data.table(allRes, STAID + DATE + Year + Month ~ VarName, value.var = c("RR", "Q_RR"))
+```
+
+Find the optimal period length of consecutive daily records
+-----------------------------------------------------------
+
+At this stage, data imputation is complete. Each station has clean and imputed data. However, we need to ensure that we have complete records. For example, some stations might have discontinuations and two consecutive records might be apart for more than one day.
+
+In the following script we compute the length of each stations period with consecutive rainfall records:
+
+``` r
+# Find period with maximum number of available meteorological records
+allRes <- copy(allRes[order(STAID, DATE)])
+allRes[, Cons := as.numeric(DATE - shift(x = DATE, n = 1, type = "lag", fill = NA))-1, by = STAID]
+allRes[is.na(Cons), Cons:= 0]
+allRes[, Group := cumsum(Cons), by = STAID]
+
+# Obtain period length for each station
+periodTbl <- allRes[, { minDate = min(DATE);
+                        maxDate = max(DATE);
+                        
+                        list( MinDate = minDate, 
+                              MaxDate = maxDate,
+                              Length  = as.numeric(maxDate-minDate))
+                        },
+                        by = list(STAID, Group)
+                    ][order(STAID, -Length)]
+```
+
+Feature engineering
+-------------------
