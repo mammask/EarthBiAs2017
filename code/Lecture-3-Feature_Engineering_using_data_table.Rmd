@@ -1,52 +1,50 @@
 ---
-title: "Feature Engineering using `data.table` <br>"
-author: "Giorgos Kaiafas, PhD Researcher <br> mail: georgios.kaiafas@uni.lu <br> Kostas Mammas, Statistical Programmer <br> mail: mammaskon@gmail.com <br>"
+title: "Feature Engineering using `data.table`"
+author: "Giorgos Kaiafas, PhD Researcher <br> mail: <georgios.kaiafas@uni.lu> <br> Kostas Mammas, Statistical Programmer <br> mail: <mammaskon@gmail.com> <br>"
 date: "EarthBiAs2017, Rhodes Island, Greece"
 output:
   github_document:
     toc: true
-    toc_depth: 3
+    toc_depth: 4
 always_allow_html: yes
 ---
 
-## Introduction
+
+##Introduction
 
 ### ECA&D
 
 ECA&D is a European Climate Assessment & Dataset project. Presented is information on changes in weather and climate extremes, as well as the daily dataset needed to monitor and analyse these extremes. ECA&D was initiated by the ECSN in 1998 and has received financial support from the EUMETNET and the European Commission. You can access the ECA&D website using the following [link](http://www.ecad.eu/).
 
-## Lecture workflow
+### Lecture workflow
 
 The purpose of this session is to fit a Machine Learning model to predict daily rainfall occurence using a set of environmental variables.
 
 We need to answer a set of questions before we start working on this task:
 
-1. What type of information will be used?
-2. How are we going to access this information?
-3. What type of data cleaning techniques will be used in order to perform feature transformation?
-4. Which environmental variables will be used in our modelling approach?
-5. If we select 3 meteorological variables how are we going to gather this information in order to fita model to a particular meteorological station?
+1.  What type of information will be used?
+2.  How are we going to access this information?
+3.  What type of data cleaning techniques will be used in order to perform feature transformation?
+4.  Which environmental variables will be used in our modelling approach?
+5.  If we select 3 meteorological variables how are we going to gather this information in order to fita model to a particular meteorological station?
 
 In order to answer these questions we will follow the steps bresented below:
 
-1. Obtain environmental daily rainfall records from ECA&D using the `ECADownloader` tool
-2. Select variables of interest
-3. Perform data cleaning/ transofrmation techniques using the `data.table` package
-4. Select country/ stations that will be used to perform feature engineering
-5. Find optimal period where a station has the available records for all the selected meteorological variables.
+1.  Obtain environmental daily rainfall records from ECA&D using the `ECADownloader` tool
+2.  Select variables of interest
+3.  Perform data cleaning/ transofrmation techniques using the `data.table` package
+4.  Select country/ stations that will be used to perform feature engineering
+5.  Find optimal period where a station has the available records for all the selected meteorological variables.
 
 Our goal is to create a dasatet in the following form:
 
-```{r, eval = FALSE}
-```
-
-## Download environmental data using the `ECADownloader` tool
+### Download environmental data using the `ECADownloader` tool
 
 The `ECADownloader` is a set of functions built in `R` using `data.table` and provide functionalities when it comes to download specific daily environmental series from all the available meteorological stations in Europe.
 
 Using the following [link](https://github.com/mammask/ECADownloader) you can use the `ECADownloader` and obtain the environmental indices of interest.
 
-```{r, eval = FALSE}
+``` {r, eval = FALSE}
 # Load packages
 library(data.table)
 library(stringr)
@@ -78,7 +76,7 @@ print(metVarTbl)
 
 In the next step we need to source the supporting functions script available in the ECADownload tool:
 
-```{r, eval = FALSE}
+``` {r, eval = F }
 # Load supporting functions
 source("./ECADownloader/code/externalFunctions_v1a.R")
 ```
@@ -87,7 +85,7 @@ source("./ECADownloader/code/externalFunctions_v1a.R")
 
 The following function provides information about the list of the available meteorological stations per environmental variable of interest:
 
-```{r, eval = FALSE}
+``` {r, eval = F }
 # Function to otain list of stations having the specific environmental variable
 availStatPerVar <- function(metVarID){
   
@@ -133,23 +131,23 @@ availStatPerVar <- function(metVarID){
 
 We can find the list of stations having daily precipitation rainfall records:
 
-```{r, eval = FALSE}
+``` {r, eval = F }
 resTbl <- availStatPerVar(metVarID = "DailyPrecipAmount")
 print(resTbl)
 ```
 
 This result can be extended to find the list of stations for the following environmental variables:
 
-1. DailyMaxTemp
-2. DailyMinTemp
-3. DailyMeanTemp
-4. DailyPrecipAmount
-5. DailyCloudCover
-6. DailyHumid    
-7. DailySunShineDur
-8. DailyMeanWindSpeed
+1.  DailyMaxTemp
+2.  DailyMinTemp
+3.  DailyMeanTemp
+4.  DailyPrecipAmount
+5.  DailyCloudCover
+6.  DailyHumid
+7.  DailySunShineDur
+8.  DailyMeanWindSpeed
 
-```{r, eval = FALSE}
+``` {r, eval = F }
 datList <- list()
 k <- 1
 for (metVarID in metVarTbl){
@@ -161,32 +159,33 @@ for (metVarID in metVarTbl){
 overall <- rbindlist(datList)
 ```
 
-## Selection of environmental variables for analysis
+Selection of environmental variables for analysis
+-------------------------------------------------
 
 We will use the following environmental variables:
 
-1. Daily Precipitation Amount
-2. Daily Mean Temperature
-3. Daily Mean Humidity
+1.  Daily Precipitation Amount
+2.  Daily Mean Temperature
+3.  Daily Mean Humidity
 
-## Challenges regarding data availability
+Challenges regarding data availability
+--------------------------------------
 
 One of the main challenges is whether a station has information about the 3 variables of interest. In this section we will identify which stations have this information:
 
-1. Find stations with rainfall and precipitation records:
+1.  Find stations with rainfall and precipitation records:
 
-```{r, eval = FALSE}
+``` {r, eval = F }
 # Find station with Rainfall and Temperature Records
 rainMeanTemp <- overall[ MetVar == "DailyPrecipAmount",
                          .(STAID)][ ,overall[ MetVar == "DailyMeanTemp",
                                        .(STAID)],
                              on = .(STAID = STAID), nomatch = 0L]
-
 ```
 
-2. Find stations with Rainfall, Temperature and Humidity Records:
+1.  Find stations with Rainfall, Temperature and Humidity Records:
 
-```{r, eval = FALSE}
+``` {r, eval = F }
 # Find stations with Rainfall, Temperature and Humidity records
 rainMeanTempHumid <- rainMeanTemp[, overall[ MetVar == "DailyHumid", .(STAID)], 
                                   on = .(STAID = STAID), nomatch = 0L]
@@ -194,9 +193,9 @@ rainMeanTempHumid <- rainMeanTemp[, overall[ MetVar == "DailyHumid", .(STAID)],
 rainMeanTempHumid
 ```
 
-3. Find the country with the most stations having the 3 environmental variables
+1.  Find the country with the most stations having the 3 environmental variables
 
-```{r, eval = FALSE}
+``` {r, eval = F }
 allStations <- unique(overall[STAID %in% 
                                 rainMeanTempHumid[, STAID] &
                                 MetVar %in% c("DailyPrecipAmount",
@@ -205,16 +204,16 @@ allStations <- unique(overall[STAID %in%
 
 # Select Spanish Stations
 stationsToKeep <- allStations[CN == "ES", STAID]
-
 ```
+
 You can visit the following [link](https://github.com/mammask/EarthBiAs2017/blob/master/Lecture-1-Data_Management.md) in order to improve your skills in `data.table` merge.
 
-
-## Data Loading in R
+Data Loading in R
+-----------------
 
 At this point we have dowloaded the data locally. As a next step we need to load the desired variables in R. For this reason we will run the following function:
 
-```{r}
+``` {r, eval = F }
 # Obtain data in R using as input a set of environmental variables:
 obtainStationDat <- function(linkMap, metVarId, stationsToKeep){
   
@@ -257,14 +256,14 @@ obtainStationDat <- function(linkMap, metVarId, stationsToKeep){
   close(mypb)
   return(rbindlist(tempStat))
 }
-
 ```
 
 We can save time by running this function using a parallel processing approach:
 
-```{r, eval = FALSE}
+``` {r, eval = F }
 library(foreach)
 library(doParallel)
+
 cl <- makeCluster(3)
 registerDoParallel(cl)
 
@@ -279,13 +278,15 @@ stopCluster(cl)
 allRes <- rbindlist(allRes)
 gc()
 ```
-## A heuristic approach to impute missing values
 
-There are  several approaches to deal with the problem of missing values. These methods refer to multiple imputation techiques, deleting records with missing values,  replacing with mean or median etc.
+A heuristic approach to impute missing values
+---------------------------------------------
+
+There are several approaches to deal with the problem of missing values. These methods refer to multiple imputation techiques, deleting records with missing values, replacing with mean or median etc.
 
 In this exercise we impute maximum 5 records per month using the monthly mean. In cases where more than 5 records appear during a month, these records are excluded.
 
-```{r, eval = FALSE}
+``` {r, eval = F }
 # Perform a data cleaning process in order to impute max 5 records per month
 # Replace values -9999 with NA
 allRes[RR == -9999, RR:= NA]
@@ -297,10 +298,10 @@ averageMapper <- allRes[, .(MonthlyMean = mean(RR, na.rm = T)), by = c("STAID","
 countNA  <- allRes[is.na(RR), .(CountNumNAs = .N), by =  c("STAID","Year", "Month", "VarName")]
 
 # Obtain count for each monthly mean
-resultDT      <- merge(averageMapper,countNA, all.x = T, by = c("STAID","Year", "Month", "VarName"))
+resultDT <- merge(averageMapper,countNA, all.x = T, by = c("STAID","Year", "Month", "VarName"))
 
 # Obtain results to original dataset
-allRes        <- merge(allRes,resultDT, all.x = T, by = c("STAID","Year", "Month", "VarName"))
+allRes <- merge(allRes,resultDT, all.x = T, by = c("STAID","Year", "Month", "VarName"))
 rm(averageMapper)
 rm(countNA)
 rm(resultDT)
@@ -324,13 +325,14 @@ allRes  <- allRes[repStat, on = .(STAID = STAID, DATE = DATE)]
 allRes <- data.table::dcast.data.table(allRes, STAID + DATE + Year + Month ~ VarName, value.var = c("RR", "Q_RR"))
 ```
 
-## Find the optimal period length of consecutive daily records
+Find the optimal period length of consecutive daily records
+-----------------------------------------------------------
 
 At this stage, data imputation is complete. Each station has clean and imputed data. However, we need to ensure that we have complete records. For example, some stations might have discontinuations and two consecutive records might be apart for more than one day.
 
 In the following script we compute the length of each stations period with consecutive rainfall records:
 
-```{r, eval = FALSE}
+``` {r, eval = F }
 # Find period with maximum number of available meteorological records
 allRes <- copy(allRes[order(STAID, DATE)])
 allRes[, Cons := as.numeric(DATE - shift(x = DATE, n = 1, type = "lag", fill = NA))-1, by = STAID]
@@ -347,9 +349,132 @@ periodTbl <- allRes[, { minDate = min(DATE);
                         },
                         by = list(STAID, Group)
                     ][order(STAID, -Length)]
-
 ```
 
-## Feature engineering
+Feature engineering
+-------------------
 
+### Get the records for the maximum period of consecutive rainfall
+
+For each station we find the maximum time period of consecutive rainfall.
+
+```{r, results='hide', message=FALSE, warning=FALSE}
+library(tidyverse)
+library(data.table)
+library(zoo)
+library(lubridate)
+library(tidyverse)
+library(RcppRoll)
+library(caTools)
+```
+
+```{r, eval = FALSE}
+periodTbl <- read_rds("./periodTbl.rds")
+maxLenths <- periodTbl[, .(Length = max(Length)), by = STAID]
+maxDuration <- periodTbl[maxLenths, on = .(STAID = STAID, Length = Length)]
+head(maxDuration)
+```
+
+```{r, eval = FALSE}
+allRes <- read_rds("./allRes.rds")
+mergedDt <- merge(allRes, maxDuration[, !"Group", with=FALSE], all.x = T, by = "STAID")
+Res <- mergedDt[DATE %between% list(MinDate, MaxDate)]
+Res <- tibble::as.tibble(Res)
+# More concrete representation of the dataset
+dplyr::glimpse(Res)
+```
+
+
+### Rolling Mean
+
+
+```{r, eval = FALSE}
+Res <- data.table::as.data.table(Res)
+Res[, Quarter:= quarter(DATE)]
+#  for all the stations we calculate:
+#  Rolling Mean for every environmental variable having as window size equal to 30 days
+Res[, c("PrecipRollAverage30", "HumidRollAverage30", "TempRollAverage30"):= lapply(.SD, rollmean, 30, fill = NA), 
+    .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = STAID]
+#  for all the stations we calculate:
+#  Rolling Mean for every environmental variable having as window size equal to 60 days
+Res[, c("PrecipRollAverage60", "HumidRollAverage60", "TempRollAverage60"):= lapply(.SD, rollmean, 60, fill = NA), 
+    .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = STAID]
+#  for all the stations we calculate:
+#  Rolling Mean for every environmental variable having as window size equal to 10 Months
+Res[, c("PrecipRollAverageMonth", "HumidRollAverageMonth", "TempRollAverageMonth"):= lapply(.SD, rollmean, 10, fill = NA), 
+                .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = c("STAID", "Month")]
+#  for all the stations we calculate:
+#  Rolling Mean for every environmental variable having as window size equal to 10 Quarters
+Res[, c("PrecipQuarterRollAverage", "HumidQuarterRollAverag", "TempQuarterRollAverage"):= lapply(.SD, rollmean, 10, fill = NA), 
+                .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = c("STAID", "Quarter")]
+Res <- as.tibble(Res)
+dplyr::glimpse(Res)
+```
+
+### Lags
+
+```{r, eval = FALSE}
+Res <- data.table::as.data.table(Res)
+# for each environmental variable we calculate the lagged values for all the sations
+Res[, c("Preciplag1", "Humidlag1", "Templag1"):= lapply(.SD, data.table::shift, type = "lag" , n = 1,  fill = NA), 
+                .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = STAID]
+
+Res[, c("Preciplag2", "Humidlag2", "Templag2"):= lapply(.SD, data.table::shift, type = "lag" , n = 2,  fill = NA), 
+                .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = STAID]
+
+Res[, c("Preciplag3", "Humidlag3", "Templag3"):= lapply(.SD, data.table::shift, type = "lag" , n = 3,  fill = NA), 
+                .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = STAID]
+
+Res[, c("Preciplag4", "Humidlag4", "Templag4"):= lapply(.SD, data.table::shift, type = "lag" , n = 4,  fill = NA), 
+                .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = STAID]
+
+Res[, c("Preciplag5", "Humidlag5", "Templag5"):= lapply(.SD, data.table::shift, type = "lag" , n = 5,  fill = NA), 
+                .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = STAID]
+Res <- as.tibble(Res)
+dplyr::glimpse(Res)
+```
+
+### Rolling Weighted Mean
+```{r, eval = FALSE}
+Res <- data.table::as.data.table(Res)
+# We create our own weight vector giving more weight to the most recent observations
+myWeights <- c((1/15)/15, (2/15)/15, (3/15)/15, (4/15)/15 , (5/15)/15, 
+               (6/15)/15 ,(7/15)/15, (8/15)/15, (9/15)/15, (15/15)/15, 
+               (15/15)/15, (20/15)/15, (30/15)/15, (50/15)/15, (50/15)/15)
+
+# for all stations we calculate:
+# Rolling Mean for every environmental variable having as window size equal to 15 days
+Res[, RainweightedRollMean15:= roll_mean(RR_DailyPrecipAmount, n = 15L, weights = myWeights, fill=NA, align = "right"), by=STAID]
+myWeights <- myWeights
+Res[, TempweightedRollMean15:= roll_mean(RR_DailyMeanTemp, n = 15L, weights = myWeights, fill=NA, align = "right"), by=STAID]
+myWeights <- myWeights
+Res[, HumidweightedRollMean15:= roll_mean(RR_DailyHumid, n = 15L, weights = myWeights, fill=NA, align = "right"), by=STAID]
+Res[, c("Q_RR_DailyHumid", "Q_RR_DailyMeanTemp", "Q_RR_DailyPrecipAmount", 
+        "Cons", "Group", "MinDate", "MaxDate", "Length") := NULL]
+Res <- as.tibble(Res)
+dplyr::glimpse(Res)
+```
+
+### Rolling Standard Deviation
+
+```{r, eval = FALSE}
+# for all stations we calculate:
+# Rolling Standard Deviation for every environmental variable having as window size equal to 15 days
+Res <- data.table::as.data.table(Res)
+Res[, RainRollSd15:= roll_sd(RR_DailyPrecipAmount,n = 15L, weights = NULL, fill=NA, align = "right"), by=STAID]
+Res[, TempRollSd15:= roll_sd(RR_DailyMeanTemp,n = 15L, weights = NULL, fill=NA, align = "right"), by=STAID]
+Res[, HumidRollSd15:= roll_sd(RR_DailyHumid,n = 15L, weights = NULL, fill=NA, align = "right"), by=STAID]
+```
+
+### Rolling Quantile 
+
+```{r, eval = FALSE}
+# for all stations we calculate:
+# Rolling Quantile for every environmental variable having as window size equal to 15 days
+Res[, RainRollQuantile15:=  caTools::runquantile(RR_DailyPrecipAmount, k = 15, probs = 0.9, align = "right"), by = STAID]
+Res[, TempRollQuantile15:=  caTools::runquantile(RR_DailyMeanTemp, k = 15, probs = 0.9, align = "right"), by = STAID]
+Res[, HumidRollQuantile15:=  caTools::runquantile(RR_DailyHumid, k = 15, probs = 0.9, align = "right"), by = STAID]
+Res <- as.tibble(Res)
+dplyr::glimpse(Res)
+```
 

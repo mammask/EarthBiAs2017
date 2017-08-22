@@ -1,12 +1,12 @@
-Feature Engineering using `data.table` <br>
+Feature Engineering using `data.table`
 ================
 Giorgos Kaiafas, PhD Researcher <br> mail: <georgios.kaiafas@uni.lu> <br> Kostas Mammas, Statistical Programmer <br> mail: <mammaskon@gmail.com> <br>
 EarthBiAs2017, Rhodes Island, Greece
 
 -   [Introduction](#introduction)
     -   [ECA&D](#ecad)
--   [Lecture workflow](#lecture-workflow)
--   [Download environmental data using the `ECADownloader` tool](#download-environmental-data-using-the-ecadownloader-tool)
+    -   [Lecture workflow](#lecture-workflow)
+    -   [Download environmental data using the `ECADownloader` tool](#download-environmental-data-using-the-ecadownloader-tool)
     -   [Availability of stations](#availability-of-stations)
 -   [Selection of environmental variables for analysis](#selection-of-environmental-variables-for-analysis)
 -   [Challenges regarding data availability](#challenges-regarding-data-availability)
@@ -14,6 +14,12 @@ EarthBiAs2017, Rhodes Island, Greece
 -   [A heuristic approach to impute missing values](#a-heuristic-approach-to-impute-missing-values)
 -   [Find the optimal period length of consecutive daily records](#find-the-optimal-period-length-of-consecutive-daily-records)
 -   [Feature engineering](#feature-engineering)
+    -   [Get the records for the maximum period of consecutive rainfall](#get-the-records-for-the-maximum-period-of-consecutive-rainfall)
+    -   [Rolling Mean](#rolling-mean)
+    -   [Lags](#lags)
+    -   [Rolling Weighted Mean](#rolling-weighted-mean)
+    -   [Rolling Standard Deviation](#rolling-standard-deviation)
+    -   [Rolling Quantile](#rolling-quantile)
 
 Introduction
 ------------
@@ -22,8 +28,7 @@ Introduction
 
 ECA&D is a European Climate Assessment & Dataset project. Presented is information on changes in weather and climate extremes, as well as the daily dataset needed to monitor and analyse these extremes. ECA&D was initiated by the ECSN in 1998 and has received financial support from the EUMETNET and the European Commission. You can access the ECA&D website using the following [link](http://www.ecad.eu/).
 
-Lecture workflow
-----------------
+### Lecture workflow
 
 The purpose of this session is to fit a Machine Learning model to predict daily rainfall occurence using a set of environmental variables.
 
@@ -45,8 +50,7 @@ In order to answer these questions we will follow the steps bresented below:
 
 Our goal is to create a dasatet in the following form:
 
-Download environmental data using the `ECADownloader` tool
-----------------------------------------------------------
+### Download environmental data using the `ECADownloader` tool
 
 The `ECADownloader` is a set of functions built in `R` using `data.table` and provide functionalities when it comes to download specific daily environmental series from all the available meteorological stations in Europe.
 
@@ -271,6 +275,7 @@ We can save time by running this function using a parallel processing approach:
 ``` r
 library(foreach)
 library(doParallel)
+
 cl <- makeCluster(3)
 registerDoParallel(cl)
 
@@ -305,10 +310,10 @@ averageMapper <- allRes[, .(MonthlyMean = mean(RR, na.rm = T)), by = c("STAID","
 countNA  <- allRes[is.na(RR), .(CountNumNAs = .N), by =  c("STAID","Year", "Month", "VarName")]
 
 # Obtain count for each monthly mean
-resultDT      <- merge(averageMapper,countNA, all.x = T, by = c("STAID","Year", "Month", "VarName"))
+resultDT <- merge(averageMapper,countNA, all.x = T, by = c("STAID","Year", "Month", "VarName"))
 
 # Obtain results to original dataset
-allRes        <- merge(allRes,resultDT, all.x = T, by = c("STAID","Year", "Month", "VarName"))
+allRes <- merge(allRes,resultDT, all.x = T, by = c("STAID","Year", "Month", "VarName"))
 rm(averageMapper)
 rm(countNA)
 rm(resultDT)
@@ -360,3 +365,126 @@ periodTbl <- allRes[, { minDate = min(DATE);
 
 Feature engineering
 -------------------
+
+### Get the records for the maximum period of consecutive rainfall
+
+For each station we find the maximum time period of consecutive rainfall.
+
+``` r
+library(tidyverse)
+library(data.table)
+library(zoo)
+library(lubridate)
+library(tidyverse)
+library(RcppRoll)
+library(caTools)
+```
+
+``` r
+periodTbl <- read_rds("./periodTbl.rds")
+maxLenths <- periodTbl[, .(Length = max(Length)), by = STAID]
+maxDuration <- periodTbl[maxLenths, on = .(STAID = STAID, Length = Length)]
+head(maxDuration)
+```
+
+``` r
+allRes <- read_rds("./allRes.rds")
+mergedDt <- merge(allRes, maxDuration[, !"Group", with=FALSE], all.x = T, by = "STAID")
+Res <- mergedDt[DATE %between% list(MinDate, MaxDate)]
+Res <- tibble::as.tibble(Res)
+# More concrete representation of the dataset
+dplyr::glimpse(Res)
+```
+
+### Rolling Mean
+
+``` r
+Res <- data.table::as.data.table(Res)
+Res[, Quarter:= quarter(DATE)]
+#  for all the stations we calculate:
+#  Rolling Mean for every environmental variable having as window size equal to 30 days
+Res[, c("PrecipRollAverage30", "HumidRollAverage30", "TempRollAverage30"):= lapply(.SD, rollmean, 30, fill = NA), 
+    .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = STAID]
+#  for all the stations we calculate:
+#  Rolling Mean for every environmental variable having as window size equal to 60 days
+Res[, c("PrecipRollAverage60", "HumidRollAverage60", "TempRollAverage60"):= lapply(.SD, rollmean, 60, fill = NA), 
+    .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = STAID]
+#  for all the stations we calculate:
+#  Rolling Mean for every environmental variable having as window size equal to 10 Months
+Res[, c("PrecipRollAverageMonth", "HumidRollAverageMonth", "TempRollAverageMonth"):= lapply(.SD, rollmean, 10, fill = NA), 
+                .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = c("STAID", "Month")]
+#  for all the stations we calculate:
+#  Rolling Mean for every environmental variable having as window size equal to 10 Quarters
+Res[, c("PrecipQuarterRollAverage", "HumidQuarterRollAverag", "TempQuarterRollAverage"):= lapply(.SD, rollmean, 10, fill = NA), 
+                .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = c("STAID", "Quarter")]
+Res <- as.tibble(Res)
+dplyr::glimpse(Res)
+```
+
+### Lags
+
+``` r
+Res <- data.table::as.data.table(Res)
+# for each environmental variable we calculate the lagged values for all the sations
+Res[, c("Preciplag1", "Humidlag1", "Templag1"):= lapply(.SD, data.table::shift, type = "lag" , n = 1,  fill = NA), 
+                .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = STAID]
+
+Res[, c("Preciplag2", "Humidlag2", "Templag2"):= lapply(.SD, data.table::shift, type = "lag" , n = 2,  fill = NA), 
+                .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = STAID]
+
+Res[, c("Preciplag3", "Humidlag3", "Templag3"):= lapply(.SD, data.table::shift, type = "lag" , n = 3,  fill = NA), 
+                .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = STAID]
+
+Res[, c("Preciplag4", "Humidlag4", "Templag4"):= lapply(.SD, data.table::shift, type = "lag" , n = 4,  fill = NA), 
+                .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = STAID]
+
+Res[, c("Preciplag5", "Humidlag5", "Templag5"):= lapply(.SD, data.table::shift, type = "lag" , n = 5,  fill = NA), 
+                .SDcols = c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp"), by = STAID]
+Res <- as.tibble(Res)
+dplyr::glimpse(Res)
+```
+
+### Rolling Weighted Mean
+
+``` r
+Res <- data.table::as.data.table(Res)
+# We create our own weight vector giving more weight to the most recent observations
+myWeights <- c((1/15)/15, (2/15)/15, (3/15)/15, (4/15)/15 , (5/15)/15, 
+               (6/15)/15 ,(7/15)/15, (8/15)/15, (9/15)/15, (15/15)/15, 
+               (15/15)/15, (20/15)/15, (30/15)/15, (50/15)/15, (50/15)/15)
+
+# for all stations we calculate:
+# Rolling Mean for every environmental variable having as window size equal to 15 days
+Res[, RainweightedRollMean15:= roll_mean(RR_DailyPrecipAmount, n = 15L, weights = myWeights, fill=NA, align = "right"), by=STAID]
+myWeights <- myWeights
+Res[, TempweightedRollMean15:= roll_mean(RR_DailyMeanTemp, n = 15L, weights = myWeights, fill=NA, align = "right"), by=STAID]
+myWeights <- myWeights
+Res[, HumidweightedRollMean15:= roll_mean(RR_DailyHumid, n = 15L, weights = myWeights, fill=NA, align = "right"), by=STAID]
+Res[, c("Q_RR_DailyHumid", "Q_RR_DailyMeanTemp", "Q_RR_DailyPrecipAmount", 
+        "Cons", "Group", "MinDate", "MaxDate", "Length") := NULL]
+Res <- as.tibble(Res)
+dplyr::glimpse(Res)
+```
+
+### Rolling Standard Deviation
+
+``` r
+# for all stations we calculate:
+# Rolling Standard Deviation for every environmental variable having as window size equal to 15 days
+Res <- data.table::as.data.table(Res)
+Res[, RainRollSd15:= roll_sd(RR_DailyPrecipAmount,n = 15L, weights = NULL, fill=NA, align = "right"), by=STAID]
+Res[, TempRollSd15:= roll_sd(RR_DailyMeanTemp,n = 15L, weights = NULL, fill=NA, align = "right"), by=STAID]
+Res[, HumidRollSd15:= roll_sd(RR_DailyHumid,n = 15L, weights = NULL, fill=NA, align = "right"), by=STAID]
+```
+
+### Rolling Quantile
+
+``` r
+# for all stations we calculate:
+# Rolling Quantile for every environmental variable having as window size equal to 15 days
+Res[, RainRollQuantile15:=  caTools::runquantile(RR_DailyPrecipAmount, k = 15, probs = 0.9, align = "right"), by = STAID]
+Res[, TempRollQuantile15:=  caTools::runquantile(RR_DailyMeanTemp, k = 15, probs = 0.9, align = "right"), by = STAID]
+Res[, HumidRollQuantile15:=  caTools::runquantile(RR_DailyHumid, k = 15, probs = 0.9, align = "right"), by = STAID]
+Res <- as.tibble(Res)
+dplyr::glimpse(Res)
+```
