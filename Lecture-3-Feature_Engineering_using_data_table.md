@@ -85,11 +85,15 @@ metVarTbl <- metVarTbl[Include=="yes", metVar]
 print(metVarTbl)
 ```
 
+    ## [1] "DailyMaxTemp"       "DailyMinTemp"       "DailyMeanTemp"     
+    ## [4] "DailyPrecipAmount"  "DailyCloudCover"    "DailyHumid"        
+    ## [7] "DailySunShineDur"   "DailyMeanWindSpeed"
+
 In the next step we need to source the supporting functions script available in the ECADownload tool:
 
 ``` r
 # Load supporting functions
-source("./ECADownloader/code/externalFunctions_v1a.R")
+source("./externalFunctions_v1a.R")
 ```
 
 ### Availability of stations
@@ -105,8 +109,8 @@ availStatPerVar <- function(metVarID){
   #                (see ECADownloader for naming conventions)
   #        output: availableStationsMap a data.table with the available stations
   
-  tempDownloadPath <- paste0("./",metVarID,"/")
-  precipStat  <-  paste0("./",metVarID,"/stations.txt")
+  tempDownloadPath <- paste0(currPath,"/",metVarID,"/")
+  precipStat  <-  paste0(currPath,"/",metVarID,"/stations.txt")
   tempMapping <- data.table(read.table(precipStat, skip = 16 ,sep=",",
                                        stringsAsFactors = FALSE, header=TRUE, quote=""))
   
@@ -144,8 +148,38 @@ We can find the list of stations having daily precipitation rainfall records:
 
 ``` r
 resTbl <- availStatPerVar(metVarID = "DailyPrecipAmount")
+```
+
+    ## Available data of DailyPrecipAmount  for  59 countries
+
+``` r
 print(resTbl)
 ```
+
+    ##       STAID                                  STANAME CN   latUpd
+    ##    1:     1 VAEXJOE                                  SE 56.86667
+    ##    2:     2 FALUN                                    SE 60.61667
+    ##    3:     3 STENSELE                                 SE 65.06667
+    ##    4:     4 LINKOEPING                               SE 58.40000
+    ##    5:     6 KARLSTAD                                 SE 59.35000
+    ##   ---                                                           
+    ## 6485: 11381 ZABLJAK                                  ME 43.15000
+    ## 6486: 11382 OLOT                                     ES 42.18806
+    ## 6487: 11383 LA POBLA DE SEGUR                        ES 42.24389
+    ## 6488: 11385 LES BORGES BLANQUES                      ES 41.51056
+    ## 6489: 11386 MASSOTERES                               ES 41.79306
+    ##          longUpd                            LatLong            MetVar
+    ##    1: 14.8000000              56.8666666666667:14.8 DailyPrecipAmount
+    ##    2: 15.6166667  60.6166666666667:15.6166666666667 DailyPrecipAmount
+    ##    3: 17.1663889  65.0666666666667:17.1663888888889 DailyPrecipAmount
+    ##    4: 15.5330556              58.4:15.5330555555556 DailyPrecipAmount
+    ##    5: 13.4666667             59.35:13.4666666666667 DailyPrecipAmount
+    ##   ---                                                                
+    ## 6485: 19.1300000                        43.15:19.13 DailyPrecipAmount
+    ## 6486:  2.4802778  42.1880555555556:2.48027777777778 DailyPrecipAmount
+    ## 6487:  0.9680556 42.2438888888889:0.968055555555556 DailyPrecipAmount
+    ## 6488:  0.8563889 41.5105555555556:0.856388888888889 DailyPrecipAmount
+    ## 6489:  1.3055556  41.7930555555556:1.30555555555556 DailyPrecipAmount
 
 This result can be extended to find the list of stations for the following environmental variables:
 
@@ -167,6 +201,26 @@ for (metVarID in metVarTbl){
   datList[[k]] <- availStatPerVar(metVarID)
   k <- k + 1 
 }
+```
+
+    ## [1] "Processing:DailyMaxTemp\n"
+    ## Available data of DailyMaxTemp  for  60 countries
+    ## [1] "Processing:DailyMinTemp\n"
+    ## Available data of DailyMinTemp  for  60 countries
+    ## [1] "Processing:DailyMeanTemp\n"
+    ## Available data of DailyMeanTemp  for  50 countries
+    ## [1] "Processing:DailyPrecipAmount\n"
+    ## Available data of DailyPrecipAmount  for  59 countries
+    ## [1] "Processing:DailyCloudCover\n"
+    ## Available data of DailyCloudCover  for  19 countries
+    ## [1] "Processing:DailyHumid\n"
+    ## Available data of DailyHumid  for  21 countries
+    ## [1] "Processing:DailySunShineDur\n"
+    ## Available data of DailySunShineDur  for  21 countries
+    ## [1] "Processing:DailyMeanWindSpeed\n"
+    ## Available data of DailyMeanWindSpeed  for  9 countries
+
+``` r
 overall <- rbindlist(datList)
 ```
 
@@ -203,6 +257,19 @@ rainMeanTempHumid <- rainMeanTemp[, overall[ MetVar == "DailyHumid", .(STAID)],
 
 rainMeanTempHumid
 ```
+
+    ##       STAID
+    ##    1:    11
+    ##    2:    12
+    ##    3:    13
+    ##    4:    14
+    ##    5:    15
+    ##   ---      
+    ## 1646: 11348
+    ## 1647: 11382
+    ## 1648: 11383
+    ## 1649: 11385
+    ## 1650: 11386
 
 1.  Find the country with the most stations having the 3 environmental variables
 
@@ -274,7 +341,13 @@ We can save time by running this function using a parallel processing approach:
 ``` r
 library(foreach)
 library(doParallel)
+```
 
+    ## Loading required package: iterators
+
+    ## Loading required package: parallel
+
+``` r
 cl <- makeCluster(3)
 registerDoParallel(cl)
 
@@ -285,10 +358,33 @@ allRes <- foreach(metVarId = c("DailyPrecipAmount",
                                                                                       metVarId,
                                                                                       stationsToKeep
                                                                                      )
+```
+
+    ## automatically exporting the following variables from the local environment:
+    ##   linkMap, obtainStationDat, stationsToKeep 
+    ## numValues: 3, numResults: 0, stopped: TRUE
+    ## got results for task 1
+    ## numValues: 3, numResults: 1, stopped: TRUE
+    ## returning status FALSE
+    ## got results for task 2
+    ## numValues: 3, numResults: 2, stopped: TRUE
+    ## returning status FALSE
+    ## got results for task 3
+    ## numValues: 3, numResults: 3, stopped: TRUE
+    ## calling combine function
+    ## evaluating call object to combine results:
+    ##   fun(accum, result.1, result.2, result.3)
+    ## returning status TRUE
+
+``` r
 stopCluster(cl)
 allRes <- rbindlist(allRes)
 gc()
 ```
+
+    ##            used  (Mb) gc trigger  (Mb) max used  (Mb)
+    ## Ncells   601905  32.2    1168576  62.5  1168576  62.5
+    ## Vcells 44859168 342.3   90417030 689.9 88108531 672.3
 
 A heuristic approach to impute missing values
 ---------------------------------------------
@@ -317,7 +413,13 @@ rm(averageMapper)
 rm(countNA)
 rm(resultDT)
 gc()
+```
 
+    ##            used  (Mb) gc trigger   (Mb)  max used  (Mb)
+    ## Ncells   602804  32.2    1168576   62.5   1168576  62.5
+    ## Vcells 57842650 441.4  136711214 1043.1 111956687 854.2
+
+``` r
 # Replace missing recods with mean 
 allRes[, c("MonthlyMean","RR"):= lapply(.SD, as.numeric), .SDcols = c("MonthlyMean","RR")]
 
@@ -380,19 +482,24 @@ library(caTools)
 ```
 
 ``` r
-periodTbl <- read_rds("./periodTbl.rds")
+# periodTbl <- read_rds("./periodTbl.rds")
 maxLenths <- periodTbl[, .(Length = max(Length)), by = STAID]
 maxDuration <- periodTbl[maxLenths, on = .(STAID = STAID, Length = Length)]
 head(maxDuration)
 ```
 
+    ##    STAID Group    MinDate    MaxDate Length
+    ## 1:   229  2102 1961-01-01 2017-06-30  20634
+    ## 2:   230  2855 1939-06-01 2017-06-30  28519
+    ## 3:   231  2978 1986-06-01 2017-06-30  11352
+    ## 4:   232    61 1960-05-01 2009-08-31  18019
+    ## 5:   233     0 1961-01-01 2017-06-30  20634
+    ## 6:   234     0 1950-01-01 2017-06-30  24652
+
 ``` r
-allRes <- read_rds("./allRes.rds")
-mergedDt <- merge(allRes, maxDuration[, !"Group", with=FALSE], all.x = T, by = "STAID")
-Res <- mergedDt[DATE %between% list(MinDate, MaxDate)]
-Res <- tibble::as.tibble(Res)
-# More concrete representation of the dataset
-dplyr::glimpse(Res)
+# allRes <- read_rds("./allRes.rds")
+allRes <- merge(allRes, maxDuration[, !"Group", with=FALSE], all.x = T, by = "STAID")
+allRes <- allRes[DATE %between% list(MinDate, MaxDate)]
 ```
 
 ### Rolling Mean
@@ -424,8 +531,8 @@ varsToCreate60 <- c("PrecipRollAverage60","HumidRollAverage60","TempRollAverage6
 # Provide list of the variables that will be used to compute rolling mean
 varsToModify <- c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp")
 
-# Compute rolling mean using a time window of 30 days
-allRes[, varsToCreate60 := lapply(.SD, rollmean, 60, fill = NA),.SDcols = varsToModify, by = STAID]
+# Compute rolling mean using a time window of 60 days
+# allRes[, varsToCreate60 := lapply(.SD, rollmean, 60, fill = NA),.SDcols = varsToModify, by = STAID]
 ```
 
 ### Lag
@@ -456,6 +563,12 @@ for (i in 1:5){
       ]
 }
 ```
+
+    ## [1] "Computing step 1\n"
+    ## [1] "Computing step 2\n"
+    ## [1] "Computing step 3\n"
+    ## [1] "Computing step 4\n"
+    ## [1] "Computing step 5\n"
 
 ### Rolling Weighted Mean
 
@@ -534,12 +647,12 @@ varsToModify               <- c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_Dai
 
 
 # Compute quantile (90%) for the previous 15 days of each record per station
-allRes[, varsToCreateWeightRollQQ:= lapply(.SD,
-                                            runquantile,
-                                            k       = 15,
-                                            probs   = 0.9,
-                                            align   = "right"),
-    .SDcols = varsToModify,
-    by=STAID
-    ]
+#allRes[, varsToCreateWeightRollQQ:= lapply(.SD,
+#                                            runquantile,
+#                                            k       = 15,
+#                                            probs   = 0.9,
+#                                            align   = "right"),
+#    .SDcols = varsToModify,
+#    by=STAID
+#    ]
 ```

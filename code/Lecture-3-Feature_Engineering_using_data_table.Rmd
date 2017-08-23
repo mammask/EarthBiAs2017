@@ -42,7 +42,7 @@ The `ECADownloader` is a set of functions built in `R` using `data.table` and pr
 
 Using the following [link](https://github.com/mammask/ECADownloader) you can use the `ECADownloader` and obtain the environmental indices of interest.
 
-``` {r, eval = FALSE}
+``` {r, EVAL = TRUE}
 # Load packages
 library(data.table)
 library(stringr)
@@ -74,16 +74,16 @@ print(metVarTbl)
 
 In the next step we need to source the supporting functions script available in the ECADownload tool:
 
-``` {r, eval = F }
+``` {r, EVAL = TRUE }
 # Load supporting functions
-source("./ECADownloader/code/externalFunctions_v1a.R")
+source("./externalFunctions_v1a.R")
 ```
 
 ### Availability of stations
 
 The following function provides information about the list of the available meteorological stations per environmental variable of interest:
 
-``` {r, eval = F }
+``` {r, EVAL = TRUE }
 # Function to otain list of stations having the specific environmental variable
 availStatPerVar <- function(metVarID){
   
@@ -92,8 +92,8 @@ availStatPerVar <- function(metVarID){
   #                (see ECADownloader for naming conventions)
   #        output: availableStationsMap a data.table with the available stations
   
-  tempDownloadPath <- paste0("./",metVarID,"/")
-  precipStat  <-  paste0("./",metVarID,"/stations.txt")
+  tempDownloadPath <- paste0(currPath,"/",metVarID,"/")
+  precipStat  <-  paste0(currPath,"/",metVarID,"/stations.txt")
   tempMapping <- data.table(read.table(precipStat, skip = 16 ,sep=",",
                                        stringsAsFactors = FALSE, header=TRUE, quote=""))
   
@@ -129,7 +129,7 @@ availStatPerVar <- function(metVarID){
 
 We can find the list of stations having daily precipitation rainfall records:
 
-``` {r, eval = F }
+``` {r, EVAL = TRUE }
 resTbl <- availStatPerVar(metVarID = "DailyPrecipAmount")
 print(resTbl)
 ```
@@ -145,7 +145,7 @@ This result can be extended to find the list of stations for the following envir
 7.  DailySunShineDur
 8.  DailyMeanWindSpeed
 
-``` {r, eval = F }
+``` {r, EVAL = TRUE }
 datList <- list()
 k <- 1
 for (metVarID in metVarTbl){
@@ -157,8 +157,8 @@ for (metVarID in metVarTbl){
 overall <- rbindlist(datList)
 ```
 
-Selection of environmental variables for analysis
--------------------------------------------------
+## Selection of environmental variables for analysis
+
 
 We will use the following environmental variables:
 
@@ -166,14 +166,13 @@ We will use the following environmental variables:
 2.  Daily Mean Temperature
 3.  Daily Mean Humidity
 
-Challenges regarding data availability
---------------------------------------
+## Challenges regarding data availability
 
 One of the main challenges is whether a station has information about the 3 variables of interest. In this section we will identify which stations have this information:
 
 1.  Find stations with rainfall and precipitation records:
 
-``` {r, eval = F }
+``` {r, EVAL = TRUE }
 # Find station with Rainfall and Temperature Records
 rainMeanTemp <- overall[ MetVar == "DailyPrecipAmount",
                          .(STAID)][ ,overall[ MetVar == "DailyMeanTemp",
@@ -183,7 +182,7 @@ rainMeanTemp <- overall[ MetVar == "DailyPrecipAmount",
 
 1.  Find stations with Rainfall, Temperature and Humidity Records:
 
-``` {r, eval = F }
+``` {r, EVAL = TRUE }
 # Find stations with Rainfall, Temperature and Humidity records
 rainMeanTempHumid <- rainMeanTemp[, overall[ MetVar == "DailyHumid", .(STAID)], 
                                   on = .(STAID = STAID), nomatch = 0L]
@@ -193,7 +192,7 @@ rainMeanTempHumid
 
 1.  Find the country with the most stations having the 3 environmental variables
 
-``` {r, eval = F }
+``` {r, EVAL = TRUE }
 allStations <- unique(overall[STAID %in% 
                                 rainMeanTempHumid[, STAID] &
                                 MetVar %in% c("DailyPrecipAmount",
@@ -206,12 +205,11 @@ stationsToKeep <- allStations[CN == "ES", STAID]
 
 You can visit the following [link](https://github.com/mammask/EarthBiAs2017/blob/master/Lecture-1-Data_Management.md) in order to improve your skills in `data.table` merge.
 
-Data Loading in R
------------------
+## Data Loading in R
 
 At this point we have dowloaded the data locally. As a next step we need to load the desired variables in R. For this reason we will run the following function:
 
-``` {r, eval = F }
+``` {r, EVAL = TRUE }
 # Obtain data in R using as input a set of environmental variables:
 obtainStationDat <- function(linkMap, metVarId, stationsToKeep){
   
@@ -258,7 +256,7 @@ obtainStationDat <- function(linkMap, metVarId, stationsToKeep){
 
 We can save time by running this function using a parallel processing approach:
 
-``` {r, eval = F }
+``` {r, EVAL = TRUE }
 library(foreach)
 library(doParallel)
 
@@ -277,14 +275,13 @@ allRes <- rbindlist(allRes)
 gc()
 ```
 
-A heuristic approach to impute missing values
----------------------------------------------
+## A heuristic approach to impute missing values
 
 There are several approaches to deal with the problem of missing values. These methods refer to multiple imputation techiques, deleting records with missing values, replacing with mean or median etc.
 
 In this exercise we impute maximum 5 records per month using the monthly mean. In cases where more than 5 records appear during a month, these records are excluded.
 
-``` {r, eval = F }
+``` {r, EVAL = TRUE }
 # Perform a data cleaning process in order to impute max 5 records per month
 # Replace values -9999 with NA
 allRes[RR == -9999, RR:= NA]
@@ -329,7 +326,7 @@ At this stage, data imputation is complete. Each station has clean and imputed d
 
 In the following script we compute the length of each stations period with consecutive rainfall records:
 
-``` {r, eval = F }
+``` {r, EVAL = TRUE }
 # Find period with maximum number of available meteorological records
 allRes <- copy(allRes[order(STAID, DATE)])
 allRes[, Cons := as.numeric(DATE - shift(x = DATE, n = 1, type = "lag", fill = NA))-1, by = STAID]
@@ -364,20 +361,17 @@ library(RcppRoll)
 library(caTools)
 ```
 
-```{r, eval = FALSE}
-periodTbl <- read_rds("./periodTbl.rds")
+```{r, EVAL = TRUE}
+# periodTbl <- read_rds("./periodTbl.rds")
 maxLenths <- periodTbl[, .(Length = max(Length)), by = STAID]
 maxDuration <- periodTbl[maxLenths, on = .(STAID = STAID, Length = Length)]
 head(maxDuration)
 ```
 
-```{r, eval = FALSE}
-allRes <- read_rds("./allRes.rds")
-mergedDt <- merge(allRes, maxDuration[, !"Group", with=FALSE], all.x = T, by = "STAID")
-Res <- mergedDt[DATE %between% list(MinDate, MaxDate)]
-Res <- tibble::as.tibble(Res)
-# More concrete representation of the dataset
-dplyr::glimpse(Res)
+```{r, EVAL = TRUE}
+# allRes <- read_rds("./allRes.rds")
+allRes <- merge(allRes, maxDuration[, !"Group", with=FALSE], all.x = T, by = "STAID")
+allRes <- allRes[DATE %between% list(MinDate, MaxDate)]
 ```
 
 
@@ -385,7 +379,7 @@ dplyr::glimpse(Res)
 
 In this section we begin the feature transformation approach. First, we calculate the average daily series of the previous 30 and 60 available days for the daily rainfall, humidity and temperature.
 
-```{r, eval = FALSE}
+```{r, EVAL = TRUE}
 # Compute Quarter indicator variable
 allRes[, Quarter:= quarter(DATE)]
 
@@ -410,8 +404,8 @@ varsToCreate60 <- c("PrecipRollAverage60","HumidRollAverage60","TempRollAverage6
 # Provide list of the variables that will be used to compute rolling mean
 varsToModify <- c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp")
 
-# Compute rolling mean using a time window of 30 days
-allRes[, varsToCreate60 := lapply(.SD, rollmean, 60, fill = NA),.SDcols = varsToModify, by = STAID]
+# Compute rolling mean using a time window of 60 days
+# allRes[, varsToCreate60 := lapply(.SD, rollmean, 60, fill = NA),.SDcols = varsToModify, by = STAID]
 
 ```
 
@@ -419,7 +413,7 @@ allRes[, varsToCreate60 := lapply(.SD, rollmean, 60, fill = NA),.SDcols = varsTo
 
 The lag of each one of the available meteorological variables is calculated to capture possible daily dependencies. In the following script we calculate lags for the five previous days:
 
-```{r, eval = FALSE}
+```{r, EVAL = TRUE}
 ## Computation of daily lag variables t-1 up to t-5
 # ---------------------------------------------------------
 
@@ -448,7 +442,7 @@ for (i in 1:5){
 
 In this section, we compute a weighted rolling mean so us to give more weight to the more recent variables:
 
-```{r, eval = FALSE}
+```{r, EVAL = TRUE}
 ## Computation of rolling weighted mean using as time window 15 days
 # ---------------------------------------------------------
 
@@ -481,7 +475,7 @@ allRes[, varsToCreateWeightRollMean:= lapply(.SD,
 
 The same logic can be applied to compute the rolling standard deviation:
 
-```{r, eval = FALSE}
+```{r, EVAL = TRUE}
 ## Computation of rolling sd using as time window 15 days
 # ---------------------------------------------------------
 
@@ -508,7 +502,7 @@ allRes[, varsToCreateWeightRollSD:= lapply(.SD,
 
 ### Rolling Quantile 
 
-```{r, eval = FALSE}
+```{r, EVAL = TRUE}
 ## Computation of rolling quantile (90%) using as time window 15 days
 # ---------------------------------------------------------
 
@@ -522,13 +516,13 @@ varsToModify               <- c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_Dai
 
 
 # Compute quantile (90%) for the previous 15 days of each record per station
-allRes[, varsToCreateWeightRollQQ:= lapply(.SD,
-                                            runquantile,
-                                            k       = 15,
-                                            probs   = 0.9,
-                                            align   = "right"),
-    .SDcols = varsToModify,
-    by=STAID
-    ]
+#allRes[, varsToCreateWeightRollQQ:= lapply(.SD,
+#                                            runquantile,
+#                                            k       = 15,
+#                                            probs   = 0.9,
+#                                            align   = "right"),
+#    .SDcols = varsToModify,
+#    by=STAID
+#    ]
 ```
 
