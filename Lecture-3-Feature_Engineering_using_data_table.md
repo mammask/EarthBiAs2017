@@ -13,8 +13,8 @@ EarthBiAs2017, Rhodes Island, Greece
 -   [Data Loading in R](#data-loading-in-r)
 -   [A heuristic approach to impute missing values](#a-heuristic-approach-to-impute-missing-values)
 -   [Find the optimal period length of consecutive daily records](#find-the-optimal-period-length-of-consecutive-daily-records)
--   [Feature engineering](#feature-engineering)
     -   [Obtain records for the maximum period of consecutive rainfall](#obtain-records-for-the-maximum-period-of-consecutive-rainfall)
+-   [Feature engineering](#feature-engineering)
     -   [Rolling Mean](#rolling-mean)
     -   [Lag](#lag)
     -   [Rolling Weighted Mean](#rolling-weighted-mean)
@@ -383,8 +383,8 @@ gc()
 ```
 
     ##            used  (Mb) gc trigger  (Mb) max used  (Mb)
-    ## Ncells   601905  32.2    1168576  62.5  1168576  62.5
-    ## Vcells 44859168 342.3   90417030 689.9 88108531 672.3
+    ## Ncells   476344  25.5     940480  50.3   750400  40.1
+    ## Vcells 44445914 339.1   89921198 686.1 87695121 669.1
 
 A heuristic approach to impute missing values
 ---------------------------------------------
@@ -397,7 +397,22 @@ In this exercise we impute maximum 5 records per month using the monthly mean. I
 # Perform a data cleaning process in order to impute max 5 records per month
 # Replace values -9999 with NA
 allRes[RR == -9999, RR:= NA]
+```
 
+    ##          STAID SOUID       DATE  RR Q_RR Year Month           VarName
+    ##       1:   229   709 1955-01-01  35    0 1955     1 DailyPrecipAmount
+    ##       2:   229   709 1955-01-02 194    0 1955     1 DailyPrecipAmount
+    ##       3:   229   709 1955-01-03   0    0 1955     1 DailyPrecipAmount
+    ##       4:   229   709 1955-01-04 168    0 1955     1 DailyPrecipAmount
+    ##       5:   229   709 1955-01-05  61    0 1955     1 DailyPrecipAmount
+    ##      ---                                                             
+    ## 8647589: 11386 75688 2017-07-27  NA    9 2017     7        DailyHumid
+    ## 8647590: 11386 75688 2017-07-28  NA    9 2017     7        DailyHumid
+    ## 8647591: 11386 75688 2017-07-29  NA    9 2017     7        DailyHumid
+    ## 8647592: 11386 75688 2017-07-30  NA    9 2017     7        DailyHumid
+    ## 8647593: 11386 75688 2017-07-31  NA    9 2017     7        DailyHumid
+
+``` r
 # Compute Monthly Mean by Station month and environmental variable
 averageMapper <- allRes[, .(MonthlyMean = mean(RR, na.rm = T)), by = c("STAID","Year", "Month", "VarName")]
 
@@ -416,15 +431,69 @@ gc()
 ```
 
     ##            used  (Mb) gc trigger   (Mb)  max used  (Mb)
-    ## Ncells   602804  32.2    1168576   62.5   1168576  62.5
-    ## Vcells 57842650 441.4  136711214 1043.1 111956687 854.2
+    ## Ncells   477433  25.5     940480   50.3    750400  40.1
+    ## Vcells 57431459 438.2  134117642 1023.3 115908076 884.4
 
 ``` r
 # Replace missing recods with mean 
 allRes[, c("MonthlyMean","RR"):= lapply(.SD, as.numeric), .SDcols = c("MonthlyMean","RR")]
+```
 
+    ##          STAID Year Month           VarName SOUID       DATE RR Q_RR
+    ##       1:   229 1955     1        DailyHumid   995 1955-01-01 94    0
+    ##       2:   229 1955     1        DailyHumid   995 1955-01-02 99    0
+    ##       3:   229 1955     1        DailyHumid   995 1955-01-03 92    0
+    ##       4:   229 1955     1        DailyHumid   995 1955-01-04 98    0
+    ##       5:   229 1955     1        DailyHumid   995 1955-01-05 94    0
+    ##      ---                                                            
+    ## 8647589: 11386 2017     7 DailyPrecipAmount 75690 2017-07-27 NA    9
+    ## 8647590: 11386 2017     7 DailyPrecipAmount 75690 2017-07-28 NA    9
+    ## 8647591: 11386 2017     7 DailyPrecipAmount 75690 2017-07-29 NA    9
+    ## 8647592: 11386 2017     7 DailyPrecipAmount 75690 2017-07-30 NA    9
+    ## 8647593: 11386 2017     7 DailyPrecipAmount 75690 2017-07-31 NA    9
+    ##          MonthlyMean CountNumNAs
+    ##       1:    92.77419          NA
+    ##       2:    92.77419          NA
+    ##       3:    92.77419          NA
+    ##       4:    92.77419          NA
+    ##       5:    92.77419          NA
+    ##      ---                        
+    ## 8647589:         NaN          31
+    ## 8647590:         NaN          31
+    ## 8647591:         NaN          31
+    ## 8647592:         NaN          31
+    ## 8647593:         NaN          31
+
+``` r
 allRes[is.na(RR) & !is.na(CountNumNAs) & CountNumNAs <= 5, RR:= MonthlyMean]
+```
 
+    ##          STAID Year Month           VarName SOUID       DATE RR Q_RR
+    ##       1:   229 1955     1        DailyHumid   995 1955-01-01 94    0
+    ##       2:   229 1955     1        DailyHumid   995 1955-01-02 99    0
+    ##       3:   229 1955     1        DailyHumid   995 1955-01-03 92    0
+    ##       4:   229 1955     1        DailyHumid   995 1955-01-04 98    0
+    ##       5:   229 1955     1        DailyHumid   995 1955-01-05 94    0
+    ##      ---                                                            
+    ## 8647589: 11386 2017     7 DailyPrecipAmount 75690 2017-07-27 NA    9
+    ## 8647590: 11386 2017     7 DailyPrecipAmount 75690 2017-07-28 NA    9
+    ## 8647591: 11386 2017     7 DailyPrecipAmount 75690 2017-07-29 NA    9
+    ## 8647592: 11386 2017     7 DailyPrecipAmount 75690 2017-07-30 NA    9
+    ## 8647593: 11386 2017     7 DailyPrecipAmount 75690 2017-07-31 NA    9
+    ##          MonthlyMean CountNumNAs
+    ##       1:    92.77419          NA
+    ##       2:    92.77419          NA
+    ##       3:    92.77419          NA
+    ##       4:    92.77419          NA
+    ##       5:    92.77419          NA
+    ##      ---                        
+    ## 8647589:         NaN          31
+    ## 8647590:         NaN          31
+    ## 8647591:         NaN          31
+    ## 8647592:         NaN          31
+    ## 8647593:         NaN          31
+
+``` r
 # Ommit observations with more than 5 NAs during a monthly period
 allRes <- allRes[is.na(CountNumNAs) | CountNumNAs <= 5]
 
@@ -449,9 +518,128 @@ In the following script we compute the length of each stations period with conse
 # Find period with maximum number of available meteorological records
 allRes <- copy(allRes[order(STAID, DATE)])
 allRes[, Cons := as.numeric(DATE - shift(x = DATE, n = 1, type = "lag", fill = NA))-1, by = STAID]
-allRes[is.na(Cons), Cons:= 0]
-allRes[, Group := cumsum(Cons), by = STAID]
+```
 
+    ##          STAID       DATE Year Month RR_DailyHumid RR_DailyMeanTemp
+    ##       1:   229 1955-01-01 1955     1            94               89
+    ##       2:   229 1955-01-02 1955     1            99               78
+    ##       3:   229 1955-01-03 1955     1            92              103
+    ##       4:   229 1955-01-04 1955     1            98              114
+    ##       5:   229 1955-01-05 1955     1            94              126
+    ##      ---                                                           
+    ## 2165737: 11386 2017-06-26 2017     6            58              230
+    ## 2165738: 11386 2017-06-27 2017     6            61              235
+    ## 2165739: 11386 2017-06-28 2017     6            59              198
+    ## 2165740: 11386 2017-06-29 2017     6            55              168
+    ## 2165741: 11386 2017-06-30 2017     6            52              166
+    ##          RR_DailyPrecipAmount Q_RR_DailyHumid Q_RR_DailyMeanTemp
+    ##       1:                   35               0                  0
+    ##       2:                  194               0                  0
+    ##       3:                    0               0                  0
+    ##       4:                  168               0                  0
+    ##       5:                   61               0                  0
+    ##      ---                                                        
+    ## 2165737:                   46               0                  0
+    ## 2165738:                    2               0                  0
+    ## 2165739:                   33               0                  0
+    ## 2165740:                    0               0                  0
+    ## 2165741:                    0               0                  0
+    ##          Q_RR_DailyPrecipAmount Cons
+    ##       1:                      0   NA
+    ##       2:                      0    0
+    ##       3:                      0    0
+    ##       4:                      0    0
+    ##       5:                      0    0
+    ##      ---                            
+    ## 2165737:                      0    0
+    ## 2165738:                      0    0
+    ## 2165739:                      0    0
+    ## 2165740:                      0    0
+    ## 2165741:                      0    0
+
+``` r
+allRes[is.na(Cons), Cons:= 0]
+```
+
+    ##          STAID       DATE Year Month RR_DailyHumid RR_DailyMeanTemp
+    ##       1:   229 1955-01-01 1955     1            94               89
+    ##       2:   229 1955-01-02 1955     1            99               78
+    ##       3:   229 1955-01-03 1955     1            92              103
+    ##       4:   229 1955-01-04 1955     1            98              114
+    ##       5:   229 1955-01-05 1955     1            94              126
+    ##      ---                                                           
+    ## 2165737: 11386 2017-06-26 2017     6            58              230
+    ## 2165738: 11386 2017-06-27 2017     6            61              235
+    ## 2165739: 11386 2017-06-28 2017     6            59              198
+    ## 2165740: 11386 2017-06-29 2017     6            55              168
+    ## 2165741: 11386 2017-06-30 2017     6            52              166
+    ##          RR_DailyPrecipAmount Q_RR_DailyHumid Q_RR_DailyMeanTemp
+    ##       1:                   35               0                  0
+    ##       2:                  194               0                  0
+    ##       3:                    0               0                  0
+    ##       4:                  168               0                  0
+    ##       5:                   61               0                  0
+    ##      ---                                                        
+    ## 2165737:                   46               0                  0
+    ## 2165738:                    2               0                  0
+    ## 2165739:                   33               0                  0
+    ## 2165740:                    0               0                  0
+    ## 2165741:                    0               0                  0
+    ##          Q_RR_DailyPrecipAmount Cons
+    ##       1:                      0    0
+    ##       2:                      0    0
+    ##       3:                      0    0
+    ##       4:                      0    0
+    ##       5:                      0    0
+    ##      ---                            
+    ## 2165737:                      0    0
+    ## 2165738:                      0    0
+    ## 2165739:                      0    0
+    ## 2165740:                      0    0
+    ## 2165741:                      0    0
+
+``` r
+allRes[, Group := cumsum(Cons), by = STAID]
+```
+
+    ##          STAID       DATE Year Month RR_DailyHumid RR_DailyMeanTemp
+    ##       1:   229 1955-01-01 1955     1            94               89
+    ##       2:   229 1955-01-02 1955     1            99               78
+    ##       3:   229 1955-01-03 1955     1            92              103
+    ##       4:   229 1955-01-04 1955     1            98              114
+    ##       5:   229 1955-01-05 1955     1            94              126
+    ##      ---                                                           
+    ## 2165737: 11386 2017-06-26 2017     6            58              230
+    ## 2165738: 11386 2017-06-27 2017     6            61              235
+    ## 2165739: 11386 2017-06-28 2017     6            59              198
+    ## 2165740: 11386 2017-06-29 2017     6            55              168
+    ## 2165741: 11386 2017-06-30 2017     6            52              166
+    ##          RR_DailyPrecipAmount Q_RR_DailyHumid Q_RR_DailyMeanTemp
+    ##       1:                   35               0                  0
+    ##       2:                  194               0                  0
+    ##       3:                    0               0                  0
+    ##       4:                  168               0                  0
+    ##       5:                   61               0                  0
+    ##      ---                                                        
+    ## 2165737:                   46               0                  0
+    ## 2165738:                    2               0                  0
+    ## 2165739:                   33               0                  0
+    ## 2165740:                    0               0                  0
+    ## 2165741:                    0               0                  0
+    ##          Q_RR_DailyPrecipAmount Cons Group
+    ##       1:                      0    0     0
+    ##       2:                      0    0     0
+    ##       3:                      0    0     0
+    ##       4:                      0    0     0
+    ##       5:                      0    0     0
+    ##      ---                                  
+    ## 2165737:                      0    0     0
+    ## 2165738:                      0    0     0
+    ## 2165739:                      0    0     0
+    ## 2165740:                      0    0     0
+    ## 2165741:                      0    0     0
+
+``` r
 # Obtain period length for each station
 periodTbl <- allRes[, { minDate = min(DATE);
                         maxDate = max(DATE);
@@ -463,9 +651,6 @@ periodTbl <- allRes[, { minDate = min(DATE);
                         by = list(STAID, Group)
                     ][order(STAID, -Length)]
 ```
-
-Feature engineering
--------------------
 
 ### Obtain records for the maximum period of consecutive rainfall
 
@@ -482,7 +667,6 @@ library(caTools)
 ```
 
 ``` r
-# periodTbl <- read_rds("./periodTbl.rds")
 maxLenths <- periodTbl[, .(Length = max(Length)), by = STAID]
 maxDuration <- periodTbl[maxLenths, on = .(STAID = STAID, Length = Length)]
 head(maxDuration)
@@ -497,21 +681,87 @@ head(maxDuration)
     ## 6:   234     0 1950-01-01 2017-06-30  24652
 
 ``` r
-# allRes <- read_rds("./allRes.rds")
 allRes <- merge(allRes, maxDuration[, !"Group", with=FALSE], all.x = T, by = "STAID")
 allRes <- allRes[DATE %between% list(MinDate, MaxDate)]
 ```
 
+Feature engineering
+-------------------
+
+In this section we begin the feature engineering approach.
+Feature engineering is the process of using domain knowledge of the data to create features that make the machine learning algorithms work. Rolling analysis will be a part of the process.
+*`Coming up with features is difficult, time-consuming, requires expert knowledge. "Applied machine learning" is basically feature engineering.`*
+*`Andrew Ng, Machine Learning and AI via Brain simulations`*
+
+A common technique to assess the constancy of a model’s parameters is to compute parameter estimates over a rolling window of a fixed size through the sample.
+Moving average methods are common in rolling analysis, and these methods lie at the heart of the technical analysis of financial time series. Moving averages typically use either equal weights for the observations or customized declining weights.
+We create the new features by using rolling averages with and without weighs.
+
 ### Rolling Mean
 
-In this section we begin the feature transformation approach. First, we calculate the average daily series of the previous 30 and 60 available days for the daily rainfall, humidity and temperature.
+First, we calculate the average daily series of the previous 30 and 60 available days for the daily rainfall, humidity and temperature.
 
 ``` r
 # Compute Quarter indicator variable
 allRes[, Quarter:= quarter(DATE)]
+```
 
+    ##          STAID       DATE Year Month RR_DailyHumid RR_DailyMeanTemp
+    ##       1:   229 1961-01-01 1961     1            73               78
+    ##       2:   229 1961-01-02 1961     1            88               82
+    ##       3:   229 1961-01-03 1961     1            82               96
+    ##       4:   229 1961-01-04 1961     1            80               78
+    ##       5:   229 1961-01-05 1961     1            83               54
+    ##      ---                                                           
+    ## 1670905: 11386 2017-06-26 2017     6            58              230
+    ## 1670906: 11386 2017-06-27 2017     6            61              235
+    ## 1670907: 11386 2017-06-28 2017     6            59              198
+    ## 1670908: 11386 2017-06-29 2017     6            55              168
+    ## 1670909: 11386 2017-06-30 2017     6            52              166
+    ##          RR_DailyPrecipAmount Q_RR_DailyHumid Q_RR_DailyMeanTemp
+    ##       1:                    0               0                  0
+    ##       2:                    2               0                  0
+    ##       3:                   29               0                  0
+    ##       4:                    0               0                  0
+    ##       5:                    0               0                  0
+    ##      ---                                                        
+    ## 1670905:                   46               0                  0
+    ## 1670906:                    2               0                  0
+    ## 1670907:                   33               0                  0
+    ## 1670908:                    0               0                  0
+    ## 1670909:                    0               0                  0
+    ##          Q_RR_DailyPrecipAmount Cons Group    MinDate    MaxDate Length
+    ##       1:                      0 2102  2102 1961-01-01 2017-06-30  20634
+    ##       2:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       3:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       4:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       5:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##      ---                                                               
+    ## 1670905:                      0    0     0 2017-05-18 2017-06-30     43
+    ## 1670906:                      0    0     0 2017-05-18 2017-06-30     43
+    ## 1670907:                      0    0     0 2017-05-18 2017-06-30     43
+    ## 1670908:                      0    0     0 2017-05-18 2017-06-30     43
+    ## 1670909:                      0    0     0 2017-05-18 2017-06-30     43
+    ##          Quarter
+    ##       1:       1
+    ##       2:       1
+    ##       3:       1
+    ##       4:       1
+    ##       5:       1
+    ##      ---        
+    ## 1670905:       2
+    ## 1670906:       2
+    ## 1670907:       2
+    ## 1670908:       2
+    ## 1670909:       2
+
+``` r
 ## Computation of rolling mean using as time window 30 days
 # ---------------------------------------------------------
+
+# As a pre-processing step we have to exclude the stations that have less than 30 observations
+excludeStations30 <- allRes[, .N, by=STAID][N<30, STAID]
+allRes <- allRes[!(STAID %in% excludeStations30)]
 
 # Provide names of the variables to create
 varsToCreate30 <- c("PrecipRollAverage30","HumidRollAverage30","TempRollAverage30")
@@ -520,10 +770,66 @@ varsToCreate30 <- c("PrecipRollAverage30","HumidRollAverage30","TempRollAverage3
 varsToModify <- c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp")
 
 # Compute rolling mean using a time window of 30 days
-allRes[, varsToCreate30 := lapply(.SD, rollmean, 30, fill = NA),.SDcols = varsToModify, by = STAID]
+# align is mandatory in order to calculate for each observation the rolling mean of the 30 previous values.
+allRes[, c(varsToCreate30) := lapply(.SD, rollmean, 30, fill = NA, align = "right"),.SDcols = varsToModify, by = STAID]
+```
 
+    ##          STAID       DATE Year Month RR_DailyHumid RR_DailyMeanTemp
+    ##       1:   229 1961-01-01 1961     1            73               78
+    ##       2:   229 1961-01-02 1961     1            88               82
+    ##       3:   229 1961-01-03 1961     1            82               96
+    ##       4:   229 1961-01-04 1961     1            80               78
+    ##       5:   229 1961-01-05 1961     1            83               54
+    ##      ---                                                           
+    ## 1670905: 11386 2017-06-26 2017     6            58              230
+    ## 1670906: 11386 2017-06-27 2017     6            61              235
+    ## 1670907: 11386 2017-06-28 2017     6            59              198
+    ## 1670908: 11386 2017-06-29 2017     6            55              168
+    ## 1670909: 11386 2017-06-30 2017     6            52              166
+    ##          RR_DailyPrecipAmount Q_RR_DailyHumid Q_RR_DailyMeanTemp
+    ##       1:                    0               0                  0
+    ##       2:                    2               0                  0
+    ##       3:                   29               0                  0
+    ##       4:                    0               0                  0
+    ##       5:                    0               0                  0
+    ##      ---                                                        
+    ## 1670905:                   46               0                  0
+    ## 1670906:                    2               0                  0
+    ## 1670907:                   33               0                  0
+    ## 1670908:                    0               0                  0
+    ## 1670909:                    0               0                  0
+    ##          Q_RR_DailyPrecipAmount Cons Group    MinDate    MaxDate Length
+    ##       1:                      0 2102  2102 1961-01-01 2017-06-30  20634
+    ##       2:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       3:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       4:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       5:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##      ---                                                               
+    ## 1670905:                      0    0     0 2017-05-18 2017-06-30     43
+    ## 1670906:                      0    0     0 2017-05-18 2017-06-30     43
+    ## 1670907:                      0    0     0 2017-05-18 2017-06-30     43
+    ## 1670908:                      0    0     0 2017-05-18 2017-06-30     43
+    ## 1670909:                      0    0     0 2017-05-18 2017-06-30     43
+    ##          Quarter PrecipRollAverage30 HumidRollAverage30 TempRollAverage30
+    ##       1:       1                  NA                 NA                NA
+    ##       2:       1                  NA                 NA                NA
+    ##       3:       1                  NA                 NA                NA
+    ##       4:       1                  NA                 NA                NA
+    ##       5:       1                  NA                 NA                NA
+    ##      ---                                                                 
+    ## 1670905:       2            9.200000           52.80000          228.8667
+    ## 1670906:       2            9.266667           53.23333          229.5333
+    ## 1670907:       2           10.366667           53.63333          229.6667
+    ## 1670908:       2           10.366667           53.60000          229.5333
+    ## 1670909:       2           10.366667           53.50000          228.6667
+
+``` r
 ## Computation of rolling mean using as time window 60 days
 # ---------------------------------------------------------
+
+# As a pre-processing step we have to exclude the stations that have less than 60 observations
+excludeStations60 <- allRes[, .N, by=STAID][N<60, STAID]
+allRes <- allRes[!(STAID %in% excludeStations60)]
 
 # Provide names of the variables to create
 varsToCreate60 <- c("PrecipRollAverage60","HumidRollAverage60","TempRollAverage60")
@@ -532,8 +838,100 @@ varsToCreate60 <- c("PrecipRollAverage60","HumidRollAverage60","TempRollAverage6
 varsToModify <- c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp")
 
 # Compute rolling mean using a time window of 60 days
-# allRes[, varsToCreate60 := lapply(.SD, rollmean, 60, fill = NA),.SDcols = varsToModify, by = STAID]
+# align is mandatory in order to calculate for each observation the rolling mean of the 60 previous values.
+allRes[, c(varsToCreate60) := lapply(.SD, rollmean, 60, fill = NA, align = "right"),.SDcols = varsToModify, by = STAID]
 ```
+
+    ##          STAID       DATE Year Month RR_DailyHumid RR_DailyMeanTemp
+    ##       1:   229 1961-01-01 1961     1            73               78
+    ##       2:   229 1961-01-02 1961     1            88               82
+    ##       3:   229 1961-01-03 1961     1            82               96
+    ##       4:   229 1961-01-04 1961     1            80               78
+    ##       5:   229 1961-01-05 1961     1            83               54
+    ##      ---                                                           
+    ## 1670861: 11385 2017-06-26 2017     6            67              240
+    ## 1670862: 11385 2017-06-27 2017     6            55              257
+    ## 1670863: 11385 2017-06-28 2017     6            54              220
+    ## 1670864: 11385 2017-06-29 2017     6            48              189
+    ## 1670865: 11385 2017-06-30 2017     6            49              184
+    ##          RR_DailyPrecipAmount Q_RR_DailyHumid Q_RR_DailyMeanTemp
+    ##       1:                    0               0                  0
+    ##       2:                    2               0                  0
+    ##       3:                   29               0                  0
+    ##       4:                    0               0                  0
+    ##       5:                    0               0                  0
+    ##      ---                                                        
+    ## 1670861:                   28               0                  0
+    ## 1670862:                    0               0                  0
+    ## 1670863:                    4               0                  0
+    ## 1670864:                    0               0                  0
+    ## 1670865:                    0               0                  0
+    ##          Q_RR_DailyPrecipAmount Cons Group    MinDate    MaxDate Length
+    ##       1:                      0 2102  2102 1961-01-01 2017-06-30  20634
+    ##       2:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       3:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       4:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       5:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##      ---                                                               
+    ## 1670861:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670862:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670863:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670864:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670865:                      0    0     0 2017-01-25 2017-06-30    156
+    ##          Quarter PrecipRollAverage30 HumidRollAverage30 TempRollAverage30
+    ##       1:       1                  NA                 NA                NA
+    ##       2:       1                  NA                 NA                NA
+    ##       3:       1                  NA                 NA                NA
+    ##       4:       1                  NA                 NA                NA
+    ##       5:       1                  NA                 NA                NA
+    ##      ---                                                                 
+    ## 1670861:       2            14.50000           56.46667          238.6333
+    ## 1670862:       2            14.50000           56.53333          239.8000
+    ## 1670863:       2            14.46667           56.76667          240.1667
+    ## 1670864:       2            14.46667           56.43333          240.1000
+    ## 1670865:       2            14.46667           56.30000          239.5000
+    ##          PrecipRollAverage60 HumidRollAverage60 TempRollAverage60
+    ##       1:                  NA                 NA                NA
+    ##       2:                  NA                 NA                NA
+    ##       3:                  NA                 NA                NA
+    ##       4:                  NA                 NA                NA
+    ##       5:                  NA                 NA                NA
+    ##      ---                                                         
+    ## 1670861:            12.91667           57.96667          207.2833
+    ## 1670862:            12.91667           57.81667          210.1833
+    ## 1670863:            12.98333           57.51667          212.0500
+    ## 1670864:            12.01667           57.10000          212.8833
+    ## 1670865:            12.01667           57.03333          214.0333
+
+``` r
+str(allRes)
+```
+
+    ## Classes 'data.table' and 'data.frame':   1670865 obs. of  22 variables:
+    ##  $ STAID                 : int  229 229 229 229 229 229 229 229 229 229 ...
+    ##  $ DATE                  : Date, format: "1961-01-01" "1961-01-02" ...
+    ##  $ Year                  : int  1961 1961 1961 1961 1961 1961 1961 1961 1961 1961 ...
+    ##  $ Month                 : int  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ RR_DailyHumid         : num  73 88 82 80 83 99 94 92 97 88 ...
+    ##  $ RR_DailyMeanTemp      : num  78 82 96 78 54 24 67 113 58 94 ...
+    ##  $ RR_DailyPrecipAmount  : num  0 2 29 0 0 0 0 0 2 2 ...
+    ##  $ Q_RR_DailyHumid       : int  0 0 0 0 0 0 0 0 0 0 ...
+    ##  $ Q_RR_DailyMeanTemp    : int  0 0 0 0 0 0 0 0 0 0 ...
+    ##  $ Q_RR_DailyPrecipAmount: int  0 0 0 0 0 0 0 0 0 0 ...
+    ##  $ Cons                  : num  2102 0 0 0 0 ...
+    ##  $ Group                 : num  2102 2102 2102 2102 2102 ...
+    ##  $ MinDate               : Date, format: "1961-01-01" "1961-01-01" ...
+    ##  $ MaxDate               : Date, format: "2017-06-30" "2017-06-30" ...
+    ##  $ Length                : num  20634 20634 20634 20634 20634 ...
+    ##  $ Quarter               : int  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ PrecipRollAverage30   : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ HumidRollAverage30    : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ TempRollAverage30     : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ PrecipRollAverage60   : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ HumidRollAverage60    : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ TempRollAverage60     : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  - attr(*, "sorted")= chr "STAID"
+    ##  - attr(*, ".internal.selfref")=<externalptr>
 
 ### Lag
 
@@ -591,7 +989,7 @@ varsToModify               <- c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_Dai
 
 
 # Compute weighted rolling mean for the previous 15 days of each record per station
-allRes[, varsToCreateWeightRollMean:= lapply(.SD,
+allRes[, c(varsToCreateWeightRollMean):= lapply(.SD,
                                             roll_mean,
                                             n       = 15L,
                                             weights = customWeights,
@@ -601,6 +999,115 @@ allRes[, varsToCreateWeightRollMean:= lapply(.SD,
     by=STAID
     ]
 ```
+
+    ##          STAID       DATE Year Month RR_DailyHumid RR_DailyMeanTemp
+    ##       1:   229 1961-01-01 1961     1            73               78
+    ##       2:   229 1961-01-02 1961     1            88               82
+    ##       3:   229 1961-01-03 1961     1            82               96
+    ##       4:   229 1961-01-04 1961     1            80               78
+    ##       5:   229 1961-01-05 1961     1            83               54
+    ##      ---                                                           
+    ## 1670861: 11385 2017-06-26 2017     6            67              240
+    ## 1670862: 11385 2017-06-27 2017     6            55              257
+    ## 1670863: 11385 2017-06-28 2017     6            54              220
+    ## 1670864: 11385 2017-06-29 2017     6            48              189
+    ## 1670865: 11385 2017-06-30 2017     6            49              184
+    ##          RR_DailyPrecipAmount Q_RR_DailyHumid Q_RR_DailyMeanTemp
+    ##       1:                    0               0                  0
+    ##       2:                    2               0                  0
+    ##       3:                   29               0                  0
+    ##       4:                    0               0                  0
+    ##       5:                    0               0                  0
+    ##      ---                                                        
+    ## 1670861:                   28               0                  0
+    ## 1670862:                    0               0                  0
+    ## 1670863:                    4               0                  0
+    ## 1670864:                    0               0                  0
+    ## 1670865:                    0               0                  0
+    ##          Q_RR_DailyPrecipAmount Cons Group    MinDate    MaxDate Length
+    ##       1:                      0 2102  2102 1961-01-01 2017-06-30  20634
+    ##       2:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       3:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       4:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       5:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##      ---                                                               
+    ## 1670861:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670862:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670863:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670864:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670865:                      0    0     0 2017-01-25 2017-06-30    156
+    ##          Quarter PrecipRollAverage30 HumidRollAverage30 TempRollAverage30
+    ##       1:       1                  NA                 NA                NA
+    ##       2:       1                  NA                 NA                NA
+    ##       3:       1                  NA                 NA                NA
+    ##       4:       1                  NA                 NA                NA
+    ##       5:       1                  NA                 NA                NA
+    ##      ---                                                                 
+    ## 1670861:       2            14.50000           56.46667          238.6333
+    ## 1670862:       2            14.50000           56.53333          239.8000
+    ## 1670863:       2            14.46667           56.76667          240.1667
+    ## 1670864:       2            14.46667           56.43333          240.1000
+    ## 1670865:       2            14.46667           56.30000          239.5000
+    ##          PrecipRollAverage60 HumidRollAverage60 TempRollAverage60
+    ##       1:                  NA                 NA                NA
+    ##       2:                  NA                 NA                NA
+    ##       3:                  NA                 NA                NA
+    ##       4:                  NA                 NA                NA
+    ##       5:                  NA                 NA                NA
+    ##      ---                                                         
+    ## 1670861:            12.91667           57.96667          207.2833
+    ## 1670862:            12.91667           57.81667          210.1833
+    ## 1670863:            12.98333           57.51667          212.0500
+    ## 1670864:            12.01667           57.10000          212.8833
+    ## 1670865:            12.01667           57.03333          214.0333
+    ##          Preciplag1 Humidlag1 Templag1 Preciplag2 Humidlag2 Templag2
+    ##       1:         NA        NA       NA         NA        NA       NA
+    ##       2:          0        73       78         NA        NA       NA
+    ##       3:          2        88       82          0        73       78
+    ##       4:         29        82       96          2        88       82
+    ##       5:          0        80       78         29        82       96
+    ##      ---                                                            
+    ## 1670861:          3        66      247          0        58      267
+    ## 1670862:         28        67      240          3        66      247
+    ## 1670863:          0        55      257         28        67      240
+    ## 1670864:          4        54      220          0        55      257
+    ## 1670865:          0        48      189          4        54      220
+    ##          Preciplag3 Humidlag3 Templag3 Preciplag4 Humidlag4 Templag4
+    ##       1:         NA        NA       NA         NA        NA       NA
+    ##       2:         NA        NA       NA         NA        NA       NA
+    ##       3:         NA        NA       NA         NA        NA       NA
+    ##       4:          0        73       78         NA        NA       NA
+    ##       5:          2        88       82          0        73       78
+    ##      ---                                                            
+    ## 1670861:          0        50      281          0        49      282
+    ## 1670862:          0        58      267          0        50      281
+    ## 1670863:          3        66      247          0        58      267
+    ## 1670864:         28        67      240          3        66      247
+    ## 1670865:          0        55      257         28        67      240
+    ##          Preciplag5 Humidlag5 Templag5 RainweightedRollMean15
+    ##       1:         NA        NA       NA                     NA
+    ##       2:         NA        NA       NA                     NA
+    ##       3:         NA        NA       NA                     NA
+    ##       4:         NA        NA       NA                     NA
+    ##       5:         NA        NA       NA                     NA
+    ##      ---                                                     
+    ## 1670861:          0        54      269               3.850000
+    ## 1670862:          0        49      282               3.591667
+    ## 1670863:          0        50      281               3.833333
+    ## 1670864:          0        58      267               3.541667
+    ## 1670865:          3        66      247               3.250000
+    ##          TempweightedRollMean15 HumidweightedRollMean15
+    ##       1:                     NA                      NA
+    ##       2:                     NA                      NA
+    ##       3:                     NA                      NA
+    ##       4:                     NA                      NA
+    ##       5:                     NA                      NA
+    ##      ---                                               
+    ## 1670861:               55.23333                265.4833
+    ## 1670862:               55.62500                264.1750
+    ## 1670863:               55.80833                258.2417
+    ## 1670864:               55.15833                248.8167
+    ## 1670865:               54.56667                239.4833
 
 ### Rolling Standard Deviation
 
@@ -620,7 +1127,7 @@ varsToModify               <- c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_Dai
 
 
 # Compute weighted rolling sd for the previous 15 days of each record per station
-allRes[, varsToCreateWeightRollSD:= lapply(.SD,
+allRes[, (varsToCreateWeightRollSD):= lapply(.SD,
                                             roll_sd,
                                             n       = 15L,
                                             weights = customWeights,
@@ -631,28 +1138,596 @@ allRes[, varsToCreateWeightRollSD:= lapply(.SD,
     ]
 ```
 
+    ##          STAID       DATE Year Month RR_DailyHumid RR_DailyMeanTemp
+    ##       1:   229 1961-01-01 1961     1            73               78
+    ##       2:   229 1961-01-02 1961     1            88               82
+    ##       3:   229 1961-01-03 1961     1            82               96
+    ##       4:   229 1961-01-04 1961     1            80               78
+    ##       5:   229 1961-01-05 1961     1            83               54
+    ##      ---                                                           
+    ## 1670861: 11385 2017-06-26 2017     6            67              240
+    ## 1670862: 11385 2017-06-27 2017     6            55              257
+    ## 1670863: 11385 2017-06-28 2017     6            54              220
+    ## 1670864: 11385 2017-06-29 2017     6            48              189
+    ## 1670865: 11385 2017-06-30 2017     6            49              184
+    ##          RR_DailyPrecipAmount Q_RR_DailyHumid Q_RR_DailyMeanTemp
+    ##       1:                    0               0                  0
+    ##       2:                    2               0                  0
+    ##       3:                   29               0                  0
+    ##       4:                    0               0                  0
+    ##       5:                    0               0                  0
+    ##      ---                                                        
+    ## 1670861:                   28               0                  0
+    ## 1670862:                    0               0                  0
+    ## 1670863:                    4               0                  0
+    ## 1670864:                    0               0                  0
+    ## 1670865:                    0               0                  0
+    ##          Q_RR_DailyPrecipAmount Cons Group    MinDate    MaxDate Length
+    ##       1:                      0 2102  2102 1961-01-01 2017-06-30  20634
+    ##       2:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       3:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       4:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       5:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##      ---                                                               
+    ## 1670861:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670862:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670863:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670864:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670865:                      0    0     0 2017-01-25 2017-06-30    156
+    ##          Quarter PrecipRollAverage30 HumidRollAverage30 TempRollAverage30
+    ##       1:       1                  NA                 NA                NA
+    ##       2:       1                  NA                 NA                NA
+    ##       3:       1                  NA                 NA                NA
+    ##       4:       1                  NA                 NA                NA
+    ##       5:       1                  NA                 NA                NA
+    ##      ---                                                                 
+    ## 1670861:       2            14.50000           56.46667          238.6333
+    ## 1670862:       2            14.50000           56.53333          239.8000
+    ## 1670863:       2            14.46667           56.76667          240.1667
+    ## 1670864:       2            14.46667           56.43333          240.1000
+    ## 1670865:       2            14.46667           56.30000          239.5000
+    ##          PrecipRollAverage60 HumidRollAverage60 TempRollAverage60
+    ##       1:                  NA                 NA                NA
+    ##       2:                  NA                 NA                NA
+    ##       3:                  NA                 NA                NA
+    ##       4:                  NA                 NA                NA
+    ##       5:                  NA                 NA                NA
+    ##      ---                                                         
+    ## 1670861:            12.91667           57.96667          207.2833
+    ## 1670862:            12.91667           57.81667          210.1833
+    ## 1670863:            12.98333           57.51667          212.0500
+    ## 1670864:            12.01667           57.10000          212.8833
+    ## 1670865:            12.01667           57.03333          214.0333
+    ##          Preciplag1 Humidlag1 Templag1 Preciplag2 Humidlag2 Templag2
+    ##       1:         NA        NA       NA         NA        NA       NA
+    ##       2:          0        73       78         NA        NA       NA
+    ##       3:          2        88       82          0        73       78
+    ##       4:         29        82       96          2        88       82
+    ##       5:          0        80       78         29        82       96
+    ##      ---                                                            
+    ## 1670861:          3        66      247          0        58      267
+    ## 1670862:         28        67      240          3        66      247
+    ## 1670863:          0        55      257         28        67      240
+    ## 1670864:          4        54      220          0        55      257
+    ## 1670865:          0        48      189          4        54      220
+    ##          Preciplag3 Humidlag3 Templag3 Preciplag4 Humidlag4 Templag4
+    ##       1:         NA        NA       NA         NA        NA       NA
+    ##       2:         NA        NA       NA         NA        NA       NA
+    ##       3:         NA        NA       NA         NA        NA       NA
+    ##       4:          0        73       78         NA        NA       NA
+    ##       5:          2        88       82          0        73       78
+    ##      ---                                                            
+    ## 1670861:          0        50      281          0        49      282
+    ## 1670862:          0        58      267          0        50      281
+    ## 1670863:          3        66      247          0        58      267
+    ## 1670864:         28        67      240          3        66      247
+    ## 1670865:          0        55      257         28        67      240
+    ##          Preciplag5 Humidlag5 Templag5 RainweightedRollMean15
+    ##       1:         NA        NA       NA                     NA
+    ##       2:         NA        NA       NA                     NA
+    ##       3:         NA        NA       NA                     NA
+    ##       4:         NA        NA       NA                     NA
+    ##       5:         NA        NA       NA                     NA
+    ##      ---                                                     
+    ## 1670861:          0        54      269               3.850000
+    ## 1670862:          0        49      282               3.591667
+    ## 1670863:          0        50      281               3.833333
+    ## 1670864:          0        58      267               3.541667
+    ## 1670865:          3        66      247               3.250000
+    ##          TempweightedRollMean15 HumidweightedRollMean15
+    ##       1:                     NA                      NA
+    ##       2:                     NA                      NA
+    ##       3:                     NA                      NA
+    ##       4:                     NA                      NA
+    ##       5:                     NA                      NA
+    ##      ---                                               
+    ## 1670861:               55.23333                265.4833
+    ## 1670862:               55.62500                264.1750
+    ## 1670863:               55.80833                258.2417
+    ## 1670864:               55.15833                248.8167
+    ## 1670865:               54.56667                239.4833
+    ##          RainweightedRollSd15 TempweightedRollSd15 HumidweightedRollSd15
+    ##       1:                   NA                   NA                    NA
+    ##       2:                   NA                   NA                    NA
+    ##       3:                   NA                   NA                    NA
+    ##       4:                   NA                   NA                    NA
+    ##       5:                   NA                   NA                    NA
+    ##      ---                                                                
+    ## 1670861:            13.526363             36.76821              142.8937
+    ## 1670862:            12.624422             35.75612              141.4852
+    ## 1670863:            11.730100             34.55831              133.9859
+    ## 1670864:            10.829406             32.45483              123.5142
+    ## 1670865:             9.928764             30.80808              113.8534
+
 ### Rolling Quantile
 
 ``` r
 ## Computation of rolling quantile (90%) using as time window 15 days
 # ---------------------------------------------------------
 
-# Provide names of the variables to create
-varsToCreateWeightRollQQ <- c("RainweightedRollQuantile15",
-                              "TempweightedRollQuantile15",
-                              "HumidweightedRollQuantile15")
-
-# Provide list of the variables that will be used to compute the  quantile (90%)
-varsToModify               <- c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp")
-
-
-# Compute quantile (90%) for the previous 15 days of each record per station
-#allRes[, varsToCreateWeightRollQQ:= lapply(.SD,
-#                                            runquantile,
-#                                            k       = 15,
-#                                            probs   = 0.9,
-#                                            align   = "right"),
-#    .SDcols = varsToModify,
-#    by=STAID
-#    ]
+allRes[, RainRollQuantile15:=  caTools::runquantile(RR_DailyPrecipAmount, k = 15, 
+                                                    probs = 0.9, endrule="NA", align = "right"), by = STAID]
 ```
+
+    ##          STAID       DATE Year Month RR_DailyHumid RR_DailyMeanTemp
+    ##       1:   229 1961-01-01 1961     1            73               78
+    ##       2:   229 1961-01-02 1961     1            88               82
+    ##       3:   229 1961-01-03 1961     1            82               96
+    ##       4:   229 1961-01-04 1961     1            80               78
+    ##       5:   229 1961-01-05 1961     1            83               54
+    ##      ---                                                           
+    ## 1670861: 11385 2017-06-26 2017     6            67              240
+    ## 1670862: 11385 2017-06-27 2017     6            55              257
+    ## 1670863: 11385 2017-06-28 2017     6            54              220
+    ## 1670864: 11385 2017-06-29 2017     6            48              189
+    ## 1670865: 11385 2017-06-30 2017     6            49              184
+    ##          RR_DailyPrecipAmount Q_RR_DailyHumid Q_RR_DailyMeanTemp
+    ##       1:                    0               0                  0
+    ##       2:                    2               0                  0
+    ##       3:                   29               0                  0
+    ##       4:                    0               0                  0
+    ##       5:                    0               0                  0
+    ##      ---                                                        
+    ## 1670861:                   28               0                  0
+    ## 1670862:                    0               0                  0
+    ## 1670863:                    4               0                  0
+    ## 1670864:                    0               0                  0
+    ## 1670865:                    0               0                  0
+    ##          Q_RR_DailyPrecipAmount Cons Group    MinDate    MaxDate Length
+    ##       1:                      0 2102  2102 1961-01-01 2017-06-30  20634
+    ##       2:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       3:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       4:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       5:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##      ---                                                               
+    ## 1670861:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670862:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670863:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670864:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670865:                      0    0     0 2017-01-25 2017-06-30    156
+    ##          Quarter PrecipRollAverage30 HumidRollAverage30 TempRollAverage30
+    ##       1:       1                  NA                 NA                NA
+    ##       2:       1                  NA                 NA                NA
+    ##       3:       1                  NA                 NA                NA
+    ##       4:       1                  NA                 NA                NA
+    ##       5:       1                  NA                 NA                NA
+    ##      ---                                                                 
+    ## 1670861:       2            14.50000           56.46667          238.6333
+    ## 1670862:       2            14.50000           56.53333          239.8000
+    ## 1670863:       2            14.46667           56.76667          240.1667
+    ## 1670864:       2            14.46667           56.43333          240.1000
+    ## 1670865:       2            14.46667           56.30000          239.5000
+    ##          PrecipRollAverage60 HumidRollAverage60 TempRollAverage60
+    ##       1:                  NA                 NA                NA
+    ##       2:                  NA                 NA                NA
+    ##       3:                  NA                 NA                NA
+    ##       4:                  NA                 NA                NA
+    ##       5:                  NA                 NA                NA
+    ##      ---                                                         
+    ## 1670861:            12.91667           57.96667          207.2833
+    ## 1670862:            12.91667           57.81667          210.1833
+    ## 1670863:            12.98333           57.51667          212.0500
+    ## 1670864:            12.01667           57.10000          212.8833
+    ## 1670865:            12.01667           57.03333          214.0333
+    ##          Preciplag1 Humidlag1 Templag1 Preciplag2 Humidlag2 Templag2
+    ##       1:         NA        NA       NA         NA        NA       NA
+    ##       2:          0        73       78         NA        NA       NA
+    ##       3:          2        88       82          0        73       78
+    ##       4:         29        82       96          2        88       82
+    ##       5:          0        80       78         29        82       96
+    ##      ---                                                            
+    ## 1670861:          3        66      247          0        58      267
+    ## 1670862:         28        67      240          3        66      247
+    ## 1670863:          0        55      257         28        67      240
+    ## 1670864:          4        54      220          0        55      257
+    ## 1670865:          0        48      189          4        54      220
+    ##          Preciplag3 Humidlag3 Templag3 Preciplag4 Humidlag4 Templag4
+    ##       1:         NA        NA       NA         NA        NA       NA
+    ##       2:         NA        NA       NA         NA        NA       NA
+    ##       3:         NA        NA       NA         NA        NA       NA
+    ##       4:          0        73       78         NA        NA       NA
+    ##       5:          2        88       82          0        73       78
+    ##      ---                                                            
+    ## 1670861:          0        50      281          0        49      282
+    ## 1670862:          0        58      267          0        50      281
+    ## 1670863:          3        66      247          0        58      267
+    ## 1670864:         28        67      240          3        66      247
+    ## 1670865:          0        55      257         28        67      240
+    ##          Preciplag5 Humidlag5 Templag5 RainweightedRollMean15
+    ##       1:         NA        NA       NA                     NA
+    ##       2:         NA        NA       NA                     NA
+    ##       3:         NA        NA       NA                     NA
+    ##       4:         NA        NA       NA                     NA
+    ##       5:         NA        NA       NA                     NA
+    ##      ---                                                     
+    ## 1670861:          0        54      269               3.850000
+    ## 1670862:          0        49      282               3.591667
+    ## 1670863:          0        50      281               3.833333
+    ## 1670864:          0        58      267               3.541667
+    ## 1670865:          3        66      247               3.250000
+    ##          TempweightedRollMean15 HumidweightedRollMean15
+    ##       1:                     NA                      NA
+    ##       2:                     NA                      NA
+    ##       3:                     NA                      NA
+    ##       4:                     NA                      NA
+    ##       5:                     NA                      NA
+    ##      ---                                               
+    ## 1670861:               55.23333                265.4833
+    ## 1670862:               55.62500                264.1750
+    ## 1670863:               55.80833                258.2417
+    ## 1670864:               55.15833                248.8167
+    ## 1670865:               54.56667                239.4833
+    ##          RainweightedRollSd15 TempweightedRollSd15 HumidweightedRollSd15
+    ##       1:                   NA                   NA                    NA
+    ##       2:                   NA                   NA                    NA
+    ##       3:                   NA                   NA                    NA
+    ##       4:                   NA                   NA                    NA
+    ##       5:                   NA                   NA                    NA
+    ##      ---                                                                
+    ## 1670861:            13.526363             36.76821              142.8937
+    ## 1670862:            12.624422             35.75612              141.4852
+    ## 1670863:            11.730100             34.55831              133.9859
+    ## 1670864:            10.829406             32.45483              123.5142
+    ## 1670865:             9.928764             30.80808              113.8534
+    ##          RainRollQuantile15
+    ##       1:                 NA
+    ##       2:                 NA
+    ##       3:                 NA
+    ##       4:                 NA
+    ##       5:                 NA
+    ##      ---                   
+    ## 1670861:                1.8
+    ## 1670862:                1.8
+    ## 1670863:                3.6
+    ## 1670864:                3.6
+    ## 1670865:                3.6
+
+``` r
+allRes[, TempRollQuantile15:=  caTools::runquantile(RR_DailyMeanTemp, k = 15, 
+                                                    probs = 0.9, endrule="NA", align = "right"), by = STAID]
+```
+
+    ##          STAID       DATE Year Month RR_DailyHumid RR_DailyMeanTemp
+    ##       1:   229 1961-01-01 1961     1            73               78
+    ##       2:   229 1961-01-02 1961     1            88               82
+    ##       3:   229 1961-01-03 1961     1            82               96
+    ##       4:   229 1961-01-04 1961     1            80               78
+    ##       5:   229 1961-01-05 1961     1            83               54
+    ##      ---                                                           
+    ## 1670861: 11385 2017-06-26 2017     6            67              240
+    ## 1670862: 11385 2017-06-27 2017     6            55              257
+    ## 1670863: 11385 2017-06-28 2017     6            54              220
+    ## 1670864: 11385 2017-06-29 2017     6            48              189
+    ## 1670865: 11385 2017-06-30 2017     6            49              184
+    ##          RR_DailyPrecipAmount Q_RR_DailyHumid Q_RR_DailyMeanTemp
+    ##       1:                    0               0                  0
+    ##       2:                    2               0                  0
+    ##       3:                   29               0                  0
+    ##       4:                    0               0                  0
+    ##       5:                    0               0                  0
+    ##      ---                                                        
+    ## 1670861:                   28               0                  0
+    ## 1670862:                    0               0                  0
+    ## 1670863:                    4               0                  0
+    ## 1670864:                    0               0                  0
+    ## 1670865:                    0               0                  0
+    ##          Q_RR_DailyPrecipAmount Cons Group    MinDate    MaxDate Length
+    ##       1:                      0 2102  2102 1961-01-01 2017-06-30  20634
+    ##       2:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       3:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       4:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       5:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##      ---                                                               
+    ## 1670861:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670862:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670863:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670864:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670865:                      0    0     0 2017-01-25 2017-06-30    156
+    ##          Quarter PrecipRollAverage30 HumidRollAverage30 TempRollAverage30
+    ##       1:       1                  NA                 NA                NA
+    ##       2:       1                  NA                 NA                NA
+    ##       3:       1                  NA                 NA                NA
+    ##       4:       1                  NA                 NA                NA
+    ##       5:       1                  NA                 NA                NA
+    ##      ---                                                                 
+    ## 1670861:       2            14.50000           56.46667          238.6333
+    ## 1670862:       2            14.50000           56.53333          239.8000
+    ## 1670863:       2            14.46667           56.76667          240.1667
+    ## 1670864:       2            14.46667           56.43333          240.1000
+    ## 1670865:       2            14.46667           56.30000          239.5000
+    ##          PrecipRollAverage60 HumidRollAverage60 TempRollAverage60
+    ##       1:                  NA                 NA                NA
+    ##       2:                  NA                 NA                NA
+    ##       3:                  NA                 NA                NA
+    ##       4:                  NA                 NA                NA
+    ##       5:                  NA                 NA                NA
+    ##      ---                                                         
+    ## 1670861:            12.91667           57.96667          207.2833
+    ## 1670862:            12.91667           57.81667          210.1833
+    ## 1670863:            12.98333           57.51667          212.0500
+    ## 1670864:            12.01667           57.10000          212.8833
+    ## 1670865:            12.01667           57.03333          214.0333
+    ##          Preciplag1 Humidlag1 Templag1 Preciplag2 Humidlag2 Templag2
+    ##       1:         NA        NA       NA         NA        NA       NA
+    ##       2:          0        73       78         NA        NA       NA
+    ##       3:          2        88       82          0        73       78
+    ##       4:         29        82       96          2        88       82
+    ##       5:          0        80       78         29        82       96
+    ##      ---                                                            
+    ## 1670861:          3        66      247          0        58      267
+    ## 1670862:         28        67      240          3        66      247
+    ## 1670863:          0        55      257         28        67      240
+    ## 1670864:          4        54      220          0        55      257
+    ## 1670865:          0        48      189          4        54      220
+    ##          Preciplag3 Humidlag3 Templag3 Preciplag4 Humidlag4 Templag4
+    ##       1:         NA        NA       NA         NA        NA       NA
+    ##       2:         NA        NA       NA         NA        NA       NA
+    ##       3:         NA        NA       NA         NA        NA       NA
+    ##       4:          0        73       78         NA        NA       NA
+    ##       5:          2        88       82          0        73       78
+    ##      ---                                                            
+    ## 1670861:          0        50      281          0        49      282
+    ## 1670862:          0        58      267          0        50      281
+    ## 1670863:          3        66      247          0        58      267
+    ## 1670864:         28        67      240          3        66      247
+    ## 1670865:          0        55      257         28        67      240
+    ##          Preciplag5 Humidlag5 Templag5 RainweightedRollMean15
+    ##       1:         NA        NA       NA                     NA
+    ##       2:         NA        NA       NA                     NA
+    ##       3:         NA        NA       NA                     NA
+    ##       4:         NA        NA       NA                     NA
+    ##       5:         NA        NA       NA                     NA
+    ##      ---                                                     
+    ## 1670861:          0        54      269               3.850000
+    ## 1670862:          0        49      282               3.591667
+    ## 1670863:          0        50      281               3.833333
+    ## 1670864:          0        58      267               3.541667
+    ## 1670865:          3        66      247               3.250000
+    ##          TempweightedRollMean15 HumidweightedRollMean15
+    ##       1:                     NA                      NA
+    ##       2:                     NA                      NA
+    ##       3:                     NA                      NA
+    ##       4:                     NA                      NA
+    ##       5:                     NA                      NA
+    ##      ---                                               
+    ## 1670861:               55.23333                265.4833
+    ## 1670862:               55.62500                264.1750
+    ## 1670863:               55.80833                258.2417
+    ## 1670864:               55.15833                248.8167
+    ## 1670865:               54.56667                239.4833
+    ##          RainweightedRollSd15 TempweightedRollSd15 HumidweightedRollSd15
+    ##       1:                   NA                   NA                    NA
+    ##       2:                   NA                   NA                    NA
+    ##       3:                   NA                   NA                    NA
+    ##       4:                   NA                   NA                    NA
+    ##       5:                   NA                   NA                    NA
+    ##      ---                                                                
+    ## 1670861:            13.526363             36.76821              142.8937
+    ## 1670862:            12.624422             35.75612              141.4852
+    ## 1670863:            11.730100             34.55831              133.9859
+    ## 1670864:            10.829406             32.45483              123.5142
+    ## 1670865:             9.928764             30.80808              113.8534
+    ##          RainRollQuantile15 TempRollQuantile15
+    ##       1:                 NA                 NA
+    ##       2:                 NA                 NA
+    ##       3:                 NA                 NA
+    ##       4:                 NA                 NA
+    ##       5:                 NA                 NA
+    ##      ---                                      
+    ## 1670861:                1.8              279.0
+    ## 1670862:                1.8              279.0
+    ## 1670863:                3.6              279.0
+    ## 1670864:                3.6              279.0
+    ## 1670865:                3.6              277.8
+
+``` r
+allRes[, HumidRollQuantile15:=  caTools::runquantile(RR_DailyHumid, k = 15, 
+                                                     probs = 0.9, endrule="NA", align = "right"), by = STAID]
+```
+
+    ##          STAID       DATE Year Month RR_DailyHumid RR_DailyMeanTemp
+    ##       1:   229 1961-01-01 1961     1            73               78
+    ##       2:   229 1961-01-02 1961     1            88               82
+    ##       3:   229 1961-01-03 1961     1            82               96
+    ##       4:   229 1961-01-04 1961     1            80               78
+    ##       5:   229 1961-01-05 1961     1            83               54
+    ##      ---                                                           
+    ## 1670861: 11385 2017-06-26 2017     6            67              240
+    ## 1670862: 11385 2017-06-27 2017     6            55              257
+    ## 1670863: 11385 2017-06-28 2017     6            54              220
+    ## 1670864: 11385 2017-06-29 2017     6            48              189
+    ## 1670865: 11385 2017-06-30 2017     6            49              184
+    ##          RR_DailyPrecipAmount Q_RR_DailyHumid Q_RR_DailyMeanTemp
+    ##       1:                    0               0                  0
+    ##       2:                    2               0                  0
+    ##       3:                   29               0                  0
+    ##       4:                    0               0                  0
+    ##       5:                    0               0                  0
+    ##      ---                                                        
+    ## 1670861:                   28               0                  0
+    ## 1670862:                    0               0                  0
+    ## 1670863:                    4               0                  0
+    ## 1670864:                    0               0                  0
+    ## 1670865:                    0               0                  0
+    ##          Q_RR_DailyPrecipAmount Cons Group    MinDate    MaxDate Length
+    ##       1:                      0 2102  2102 1961-01-01 2017-06-30  20634
+    ##       2:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       3:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       4:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##       5:                      0    0  2102 1961-01-01 2017-06-30  20634
+    ##      ---                                                               
+    ## 1670861:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670862:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670863:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670864:                      0    0     0 2017-01-25 2017-06-30    156
+    ## 1670865:                      0    0     0 2017-01-25 2017-06-30    156
+    ##          Quarter PrecipRollAverage30 HumidRollAverage30 TempRollAverage30
+    ##       1:       1                  NA                 NA                NA
+    ##       2:       1                  NA                 NA                NA
+    ##       3:       1                  NA                 NA                NA
+    ##       4:       1                  NA                 NA                NA
+    ##       5:       1                  NA                 NA                NA
+    ##      ---                                                                 
+    ## 1670861:       2            14.50000           56.46667          238.6333
+    ## 1670862:       2            14.50000           56.53333          239.8000
+    ## 1670863:       2            14.46667           56.76667          240.1667
+    ## 1670864:       2            14.46667           56.43333          240.1000
+    ## 1670865:       2            14.46667           56.30000          239.5000
+    ##          PrecipRollAverage60 HumidRollAverage60 TempRollAverage60
+    ##       1:                  NA                 NA                NA
+    ##       2:                  NA                 NA                NA
+    ##       3:                  NA                 NA                NA
+    ##       4:                  NA                 NA                NA
+    ##       5:                  NA                 NA                NA
+    ##      ---                                                         
+    ## 1670861:            12.91667           57.96667          207.2833
+    ## 1670862:            12.91667           57.81667          210.1833
+    ## 1670863:            12.98333           57.51667          212.0500
+    ## 1670864:            12.01667           57.10000          212.8833
+    ## 1670865:            12.01667           57.03333          214.0333
+    ##          Preciplag1 Humidlag1 Templag1 Preciplag2 Humidlag2 Templag2
+    ##       1:         NA        NA       NA         NA        NA       NA
+    ##       2:          0        73       78         NA        NA       NA
+    ##       3:          2        88       82          0        73       78
+    ##       4:         29        82       96          2        88       82
+    ##       5:          0        80       78         29        82       96
+    ##      ---                                                            
+    ## 1670861:          3        66      247          0        58      267
+    ## 1670862:         28        67      240          3        66      247
+    ## 1670863:          0        55      257         28        67      240
+    ## 1670864:          4        54      220          0        55      257
+    ## 1670865:          0        48      189          4        54      220
+    ##          Preciplag3 Humidlag3 Templag3 Preciplag4 Humidlag4 Templag4
+    ##       1:         NA        NA       NA         NA        NA       NA
+    ##       2:         NA        NA       NA         NA        NA       NA
+    ##       3:         NA        NA       NA         NA        NA       NA
+    ##       4:          0        73       78         NA        NA       NA
+    ##       5:          2        88       82          0        73       78
+    ##      ---                                                            
+    ## 1670861:          0        50      281          0        49      282
+    ## 1670862:          0        58      267          0        50      281
+    ## 1670863:          3        66      247          0        58      267
+    ## 1670864:         28        67      240          3        66      247
+    ## 1670865:          0        55      257         28        67      240
+    ##          Preciplag5 Humidlag5 Templag5 RainweightedRollMean15
+    ##       1:         NA        NA       NA                     NA
+    ##       2:         NA        NA       NA                     NA
+    ##       3:         NA        NA       NA                     NA
+    ##       4:         NA        NA       NA                     NA
+    ##       5:         NA        NA       NA                     NA
+    ##      ---                                                     
+    ## 1670861:          0        54      269               3.850000
+    ## 1670862:          0        49      282               3.591667
+    ## 1670863:          0        50      281               3.833333
+    ## 1670864:          0        58      267               3.541667
+    ## 1670865:          3        66      247               3.250000
+    ##          TempweightedRollMean15 HumidweightedRollMean15
+    ##       1:                     NA                      NA
+    ##       2:                     NA                      NA
+    ##       3:                     NA                      NA
+    ##       4:                     NA                      NA
+    ##       5:                     NA                      NA
+    ##      ---                                               
+    ## 1670861:               55.23333                265.4833
+    ## 1670862:               55.62500                264.1750
+    ## 1670863:               55.80833                258.2417
+    ## 1670864:               55.15833                248.8167
+    ## 1670865:               54.56667                239.4833
+    ##          RainweightedRollSd15 TempweightedRollSd15 HumidweightedRollSd15
+    ##       1:                   NA                   NA                    NA
+    ##       2:                   NA                   NA                    NA
+    ##       3:                   NA                   NA                    NA
+    ##       4:                   NA                   NA                    NA
+    ##       5:                   NA                   NA                    NA
+    ##      ---                                                                
+    ## 1670861:            13.526363             36.76821              142.8937
+    ## 1670862:            12.624422             35.75612              141.4852
+    ## 1670863:            11.730100             34.55831              133.9859
+    ## 1670864:            10.829406             32.45483              123.5142
+    ## 1670865:             9.928764             30.80808              113.8534
+    ##          RainRollQuantile15 TempRollQuantile15 HumidRollQuantile15
+    ##       1:                 NA                 NA                  NA
+    ##       2:                 NA                 NA                  NA
+    ##       3:                 NA                 NA                  NA
+    ##       4:                 NA                 NA                  NA
+    ##       5:                 NA                 NA                  NA
+    ##      ---                                                          
+    ## 1670861:                1.8              279.0                62.8
+    ## 1670862:                1.8              279.0                62.8
+    ## 1670863:                3.6              279.0                62.8
+    ## 1670864:                3.6              279.0                62.8
+    ## 1670865:                3.6              277.8                62.8
+
+``` r
+str(allRes)
+```
+
+    ## Classes 'data.table' and 'data.frame':   1670865 obs. of  46 variables:
+    ##  $ STAID                  : int  229 229 229 229 229 229 229 229 229 229 ...
+    ##  $ DATE                   : Date, format: "1961-01-01" "1961-01-02" ...
+    ##  $ Year                   : int  1961 1961 1961 1961 1961 1961 1961 1961 1961 1961 ...
+    ##  $ Month                  : int  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ RR_DailyHumid          : num  73 88 82 80 83 99 94 92 97 88 ...
+    ##  $ RR_DailyMeanTemp       : num  78 82 96 78 54 24 67 113 58 94 ...
+    ##  $ RR_DailyPrecipAmount   : num  0 2 29 0 0 0 0 0 2 2 ...
+    ##  $ Q_RR_DailyHumid        : int  0 0 0 0 0 0 0 0 0 0 ...
+    ##  $ Q_RR_DailyMeanTemp     : int  0 0 0 0 0 0 0 0 0 0 ...
+    ##  $ Q_RR_DailyPrecipAmount : int  0 0 0 0 0 0 0 0 0 0 ...
+    ##  $ Cons                   : num  2102 0 0 0 0 ...
+    ##  $ Group                  : num  2102 2102 2102 2102 2102 ...
+    ##  $ MinDate                : Date, format: "1961-01-01" "1961-01-01" ...
+    ##  $ MaxDate                : Date, format: "2017-06-30" "2017-06-30" ...
+    ##  $ Length                 : num  20634 20634 20634 20634 20634 ...
+    ##  $ Quarter                : int  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ PrecipRollAverage30    : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ HumidRollAverage30     : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ TempRollAverage30      : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ PrecipRollAverage60    : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ HumidRollAverage60     : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ TempRollAverage60      : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ Preciplag1             : num  NA 0 2 29 0 0 0 0 0 2 ...
+    ##  $ Humidlag1              : num  NA 73 88 82 80 83 99 94 92 97 ...
+    ##  $ Templag1               : num  NA 78 82 96 78 54 24 67 113 58 ...
+    ##  $ Preciplag2             : num  NA NA 0 2 29 0 0 0 0 0 ...
+    ##  $ Humidlag2              : num  NA NA 73 88 82 80 83 99 94 92 ...
+    ##  $ Templag2               : num  NA NA 78 82 96 78 54 24 67 113 ...
+    ##  $ Preciplag3             : num  NA NA NA 0 2 29 0 0 0 0 ...
+    ##  $ Humidlag3              : num  NA NA NA 73 88 82 80 83 99 94 ...
+    ##  $ Templag3               : num  NA NA NA 78 82 96 78 54 24 67 ...
+    ##  $ Preciplag4             : num  NA NA NA NA 0 2 29 0 0 0 ...
+    ##  $ Humidlag4              : num  NA NA NA NA 73 88 82 80 83 99 ...
+    ##  $ Templag4               : num  NA NA NA NA 78 82 96 78 54 24 ...
+    ##  $ Preciplag5             : num  NA NA NA NA NA 0 2 29 0 0 ...
+    ##  $ Humidlag5              : num  NA NA NA NA NA 73 88 82 80 83 ...
+    ##  $ Templag5               : num  NA NA NA NA NA 78 82 96 78 54 ...
+    ##  $ RainweightedRollMean15 : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ TempweightedRollMean15 : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ HumidweightedRollMean15: num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ RainweightedRollSd15   : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ TempweightedRollSd15   : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ HumidweightedRollSd15  : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ RainRollQuantile15     : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ TempRollQuantile15     : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  $ HumidRollQuantile15    : num  NA NA NA NA NA NA NA NA NA NA ...
+    ##  - attr(*, "sorted")= chr "STAID"
+    ##  - attr(*, ".internal.selfref")=<externalptr>
