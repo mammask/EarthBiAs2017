@@ -109,8 +109,11 @@ availStatPerVar <- function(metVarID){
   #                (see ECADownloader for naming conventions)
   #        output: availableStationsMap a data.table with the available stations
   
+  # Define the download path 
   tempDownloadPath <- paste0(currPath,"/",metVarID,"/")
+  # File with the list of stations for the specific meteorological variable
   precipStat  <-  paste0(currPath,"/",metVarID,"/stations.txt")
+  # Reaf stations file - skipping first 16 rows
   tempMapping <- data.table(read.table(precipStat, skip = 16 ,sep=",",
                                        stringsAsFactors = FALSE, header=TRUE, quote=""))
   
@@ -121,12 +124,14 @@ availStatPerVar <- function(metVarID){
   
   # Find Available Stations with their names and their location
   dataFileNames <- list.files(tempDownloadPath, pattern=".txt")
+  # List of files with rainfall records
   dataFileNames <- dataFileNames[!dataFileNames %in% c("elements.txt", "sources.txt","stations.txt")]
   dataFileNamesIDs <- as.numeric(gsub(".txt","",
                                       gsub(paste0(linkMap[VarName==metVarID,ID],
                                                   "_STAID"),"",dataFileNames)
                                       )
                                  )
+  # data.table with stations
   availableStationsMap <- data.table(STAID=dataFileNamesIDs)
   availableStationsMap <- merge(availableStationsMap,
                                 tempMapping[,c("STAID",
@@ -298,25 +303,37 @@ obtainStationDat <- function(linkMap, metVarId, stationsToKeep){
   library(data.table)
   library(stringr)
   library(tcltk)
+  
+  # Create an empty list
   tempStat <- list()
+  # Obtain download path
   tempDownloadPath <- linkMap[VarName == metVarId,downloadDatPath]
+  # Obtain files with the records
   dataFileNames <- list.files(tempDownloadPath, pattern=".txt")
+  # Remove un-necessary stations 
   dataFileNames <- dataFileNames[!dataFileNames %in% 
                                    c("elements.txt", "sources.txt","stations.txt")]
+  
+  # Create a data.table with the names of the files of the rainfall records
   dataFileNamesMap <- data.table(FileName=dataFileNames)
+  # Create a data.table with the names of the stations
   stationsToKeep <- data.table(Filename = stationsToKeep)
+  # Create the names of the records of interest (see pattern of file names)
   stationsToKeep[, Filename := paste0(linkMap[VarName == metVarId, ID],"_STAID",
                                       str_pad(string = Filename,
                                               width = 6,
                                               side = "left",
                                               pad = "0"),".txt")]
   
+  # Define files to download
   statToDownload <- dataFileNamesMap[FileName %in% stationsToKeep[,Filename], FileName]
   
+  # Create a progress bar so as to have a sense of the progress
   k <- 1
   mypb <- tkProgressBar(title ="Percentage Complete: 0%", min=0,
                         max=length(statToDownload), initial=0, width=400)
   
+  # For loop to read the records of each meteorological station
   for (tempFile_id in statToDownload){
     setTkProgressBar(mypb, k, title=paste0("Percentage Complete: ",
                                            round(k/length(statToDownload)*100,digits = 1),
@@ -324,9 +341,13 @@ obtainStationDat <- function(linkMap, metVarId, stationsToKeep){
     tempStat[[k]] <- data.table(read.table(paste0(tempDownloadPath,"/",tempFile_id)
                                            ,skip=20, sep=",",header=TRUE, stringsAsFactors=FALSE))
     
+    # Format the date
     tempStat[[k]][,DATE:=as.Date(as.character(DATE), format("%Y%m%d"))]
+    # Compute year variable
     tempStat[[k]][,Year:= year(DATE)]
+    # Compute month variable
     tempStat[[k]][,Month:= month(DATE)]
+    # Create a name with the id of the meteorological variable of interest
     tempStat[[k]][,VarName:=metVarId]
     
     k <- k + 1
@@ -383,8 +404,8 @@ gc()
 ```
 
     ##            used  (Mb) gc trigger  (Mb) max used  (Mb)
-    ## Ncells   476344  25.5     940480  50.3   750400  40.1
-    ## Vcells 44445914 339.1   89921198 686.1 87695121 669.1
+    ## Ncells   476382  25.5     940480  50.3   750400  40.1
+    ## Vcells 44446517 339.2   89921921 686.1 87695724 669.1
 
 A heuristic approach to impute missing values
 ---------------------------------------------
@@ -431,8 +452,8 @@ gc()
 ```
 
     ##            used  (Mb) gc trigger   (Mb)  max used  (Mb)
-    ## Ncells   477433  25.5     940480   50.3    750400  40.1
-    ## Vcells 57431459 438.2  134117642 1023.3 115908076 884.4
+    ## Ncells   477471  25.5     940480   50.3    750400  40.1
+    ## Vcells 57432062 438.2  134118365 1023.3 115908679 884.4
 
 ``` r
 # Replace missing recods with mean 
