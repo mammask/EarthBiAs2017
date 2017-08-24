@@ -1,4 +1,4 @@
-Introduction to large data management using `R`<br>
+Introduction to large data management using `R` <br>
 ================
 Kostas Mammas, Statistical Programmer <br> mail <mammaskon@gmail.com> <br>
 EarthBiAs2017, Rhodes Island, Greece
@@ -93,7 +93,7 @@ Data import
 # Load libraries
 library(data.table)
 # Set working directory
-setwd("~/Documents/Summer_School_2017/EarthBiAs2017/")
+setwd("~/Documents/EarthBiAs2017/")
 # Read precipitation data
 envDat <- readRDS("./data/spanishPrecipRecords.RDS")
 # Convert dataset to DT
@@ -138,22 +138,6 @@ In `data.table` it is easy to create new variables or update existing ones using
 ``` r
 # Create a new column with the minimum rainfall per station
 envDat[Q_RR != 9, maxRainfall := max(RR, na.rm = T), by = STAID]
-```
-
-    ##          STAID SOUID     DATE    RR Q_RR maxRainfall
-    ##       1:   229   709 19550101    35    0        1191
-    ##       2:   229   709 19550102   194    0        1191
-    ##       3:   229   709 19550103     0    0        1191
-    ##       4:   229   709 19550104   168    0        1191
-    ##       5:   229   709 19550105    61    0        1191
-    ##      ---                                            
-    ## 3351640: 11383 56288 20170224 -9999    9          NA
-    ## 3351641: 11383 56288 20170225 -9999    9          NA
-    ## 3351642: 11383 56288 20170226 -9999    9          NA
-    ## 3351643: 11383 56288 20170227 -9999    9          NA
-    ## 3351644: 11383 56288 20170228 -9999    9          NA
-
-``` r
 head(envDat)
 ```
 
@@ -171,19 +155,6 @@ You can easily delete a variable:
 envDat[, maxRainfall := NULL]
 ```
 
-    ##          STAID SOUID     DATE    RR Q_RR
-    ##       1:   229   709 19550101    35    0
-    ##       2:   229   709 19550102   194    0
-    ##       3:   229   709 19550103     0    0
-    ##       4:   229   709 19550104   168    0
-    ##       5:   229   709 19550105    61    0
-    ##      ---                                
-    ## 3351640: 11383 56288 20170224 -9999    9
-    ## 3351641: 11383 56288 20170225 -9999    9
-    ## 3351642: 11383 56288 20170226 -9999    9
-    ## 3351643: 11383 56288 20170227 -9999    9
-    ## 3351644: 11383 56288 20170228 -9999    9
-
 Managing formats
 ----------------
 
@@ -192,19 +163,6 @@ In the previous section we used the `str` function to obtain the dataset formats
 ``` r
 envDat[,DATE:=as.Date(as.character(DATE), format("%Y%m%d"))]
 ```
-
-    ##          STAID SOUID       DATE    RR Q_RR
-    ##       1:   229   709 1955-01-01    35    0
-    ##       2:   229   709 1955-01-02   194    0
-    ##       3:   229   709 1955-01-03     0    0
-    ##       4:   229   709 1955-01-04   168    0
-    ##       5:   229   709 1955-01-05    61    0
-    ##      ---                                  
-    ## 3351640: 11383 56288 2017-02-24 -9999    9
-    ## 3351641: 11383 56288 2017-02-25 -9999    9
-    ## 3351642: 11383 56288 2017-02-26 -9999    9
-    ## 3351643: 11383 56288 2017-02-27 -9999    9
-    ## 3351644: 11383 56288 2017-02-28 -9999    9
 
 `:=` is used in order to create a new column or update an existing one.
 
@@ -638,36 +596,36 @@ setkey(stationsData, STAID)
 recsPerStat[stationsData[, list(STAID, STANAME)], nomatch = 0L]
 ```
 
-    ##      STAID     N                 STANAME
-    ##   1:   229 22736  BADAJOZ/TALAVERALAREAL
-    ##   2:   230 35520           MADRID-RETIRO
-    ##   3:   231 27484        MALAGAAEROPUERTO
-    ##   4:   232 26023             NAVACERRADA
-    ##   5:   233 26388     SALAMANCAAEROPUERTO
-    ##  ---                                    
-    ## 196: 11346   425 PANTADEDARNIUS-BOADELLA
-    ## 197: 11347   425               PUIGCERDA
-    ## 198: 11348   425                 TIVISSA
-    ## 199: 11382  3347                    OLOT
-    ## 200: 11383  3347          LAPOBLADESEGUR
+    ##      STAID     N                                  STANAME
+    ##   1:   229 22736 BADAJOZ/TALAVERA LA REAL                
+    ##   2:   230 35520 MADRID - RETIRO                         
+    ##   3:   231 27484 MALAGA AEROPUERTO                       
+    ##   4:   232 26023 NAVACERRADA                             
+    ##   5:   233 26388 SALAMANCA AEROPUERTO                    
+    ##  ---                                                     
+    ## 196: 11346   425 PANTA DE DARNIUS - BOADELLA             
+    ## 197: 11347   425 PUIGCERDA                               
+    ## 198: 11348   425 TIVISSA                                 
+    ## 199: 11382  3347 OLOT                                    
+    ## 200: 11383  3347 LA POBLA DE SEGUR
 
 ``` r
 # Obtain station with the most rainfall records - inner join
 recsPerStat[stationsData[, list(STAID, STANAME)], nomatch = 0L][order(N, decreasing = T)]
 ```
 
-    ##      STAID     N                     STANAME
-    ##   1:  3920 43980          GIRONA-NOUINSTITUT
-    ##   2:  3930 43980       GIRONA(ANTICINSTITUT)
-    ##   3: 11040 43980                      GIRONA
-    ##   4:   336 42459           ALBACETELOSLLANOS
-    ##   5:   236 40998 TORTOSA-OBSERVATORIODELEBRO
-    ##  ---                                        
-    ## 196: 11078  1704                     SOLSONA
-    ## 197: 11025   790           CASTELLNOUDESEANA
-    ## 198: 11346   425     PANTADEDARNIUS-BOADELLA
-    ## 199: 11347   425                   PUIGCERDA
-    ## 200: 11348   425                     TIVISSA
+    ##      STAID     N                                  STANAME
+    ##   1:  3920 43980 GIRONA-NOU INSTITUT                     
+    ##   2:  3930 43980 GIRONA (ANTIC INSTITUT)                 
+    ##   3: 11040 43980 GIRONA                                  
+    ##   4:   336 42459 ALBACETE LOS LLANOS                     
+    ##   5:   236 40998 TORTOSA - OBSERVATORIO DEL EBRO         
+    ##  ---                                                     
+    ## 196: 11078  1704 SOLSONA                                 
+    ## 197: 11025   790 CASTELLNOU DE SEANA                     
+    ## 198: 11346   425 PANTA DE DARNIUS - BOADELLA             
+    ## 199: 11347   425 PUIGCERDA                               
+    ## 200: 11348   425 TIVISSA
 
 In the next lecture we will find metrics for various stations and based on the stations' location we will create maps.
 
@@ -736,7 +694,7 @@ envDat[Q_RR != 9, {extrVal     = quantile(RR[RR>0], probs = 0.9)[[1]]
 
 ### Maximum number of consecutive rainfall events
 
-In the following example, we compute the maxmimum number of consecutive rainfall days for each station and available year.
+In the following example, we compute the maximum number of consecutive rainfall days for each station and available year.
 
 ``` r
 # Compute maximum number of consecutive daily rainfall events per station
@@ -806,7 +764,7 @@ Also, this example can be easily extended in order to compute the maximum number
 
 ### Exercise 2: Compute the maximum number of extreme consecutive rainfall events
 
-You will need to count the maximium number of consecutive extreme rainfall events by station and by year considering that an extreme rainfall event is a record with value greater than the 90% of the distribution of daily rainfall of each station and year.
+You will need to count the maximum number of consecutive extreme rainfall events by station and by year considering that an extreme rainfall event is a record with value greater than the 90% of the distribution of daily rainfall of each station and year.
 
 Visualization of environmental rainfall series
 ==============================================

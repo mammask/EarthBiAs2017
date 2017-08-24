@@ -73,7 +73,7 @@ The dataset with the available meteorological stations consists of 9 columns:
 # Load libraries
 library(data.table)
 # Set working directory
-setwd("~/Documents/Summer_School_2017/EarthBiAs2017/")
+setwd("~/Documents/EarthBiAs2017/")
 # Read precipitation data
 envDat <- readRDS("./data/spanishPrecipRecords.RDS")
 # Convert dataset to DT
@@ -307,7 +307,7 @@ envDat[Q_RR != 9, {extrVal     = quantile(RR[RR>0], probs = 0.9)[[1]]
 
 ### Maximum number of consecutive rainfall events
 
-In the following example, we compute the maxmimum number of consecutive rainfall days for each station and available year. 
+In the following example, we compute the maximum number of consecutive rainfall days for each station and available year. 
 
 ```{r consecutive rainfall events - part 1, eval = TRUE, warning=FALSE}
 # Compute maximum number of consecutive daily rainfall events per station
@@ -351,7 +351,7 @@ Also, this example can be easily extended in order to compute the maximum number
 
 ### Exercise 2: Compute the maximum number of extreme consecutive rainfall events
 
-You will need to count the maximium number of consecutive extreme rainfall events by station and by year considering that an extreme rainfall event is a record with value greater than the 90% of the distribution of daily rainfall of each station and year. 
+You will need to count the maximum number of consecutive extreme rainfall events by station and by year considering that an extreme rainfall event is a record with value greater than the 90% of the distribution of daily rainfall of each station and year. 
 
 # Visualization of environmental rainfall series
 
