@@ -345,7 +345,6 @@ periodTbl <- allRes[, { minDate = min(DATE);
                     ][order(STAID, -Length)]
 ```
 
-## Feature engineering
 
 ### Obtain records for the maximum period of consecutive rainfall
 
@@ -362,22 +361,30 @@ library(caTools)
 ```
 
 ```{r, EVAL = TRUE}
-# periodTbl <- read_rds("./periodTbl.rds")
 maxLenths <- periodTbl[, .(Length = max(Length)), by = STAID]
 maxDuration <- periodTbl[maxLenths, on = .(STAID = STAID, Length = Length)]
 head(maxDuration)
 ```
 
 ```{r, EVAL = TRUE}
-# allRes <- read_rds("./allRes.rds")
 allRes <- merge(allRes, maxDuration[, !"Group", with=FALSE], all.x = T, by = "STAID")
 allRes <- allRes[DATE %between% list(MinDate, MaxDate)]
 ```
+## Feature engineering
+
+In this section we begin the feature engineering approach.  
+Feature engineering is the process of using domain knowledge of the data to create features that make the machine learning algorithms work. Rolling analysis will be a part of the process.   
+*```Coming up with features is difficult, time-consuming, requires expert knowledge. "Applied machine learning" is basically feature engineering.```*    
+*```Andrew Ng, Machine Learning and AI via Brain simulations```*   
+
+A common technique to assess the constancy of a model’s parameters is to compute parameter estimates over a rolling window of a fixed size through the sample.   
+Moving average methods are common in rolling analysis, and these methods lie at the heart of the technical analysis of financial time series. Moving averages typically use either equal weights for the observations or customized declining weights.   
+We create the new features by using rolling averages with and without weighs.
 
 
 ### Rolling Mean
 
-In this section we begin the feature transformation approach. First, we calculate the average daily series of the previous 30 and 60 available days for the daily rainfall, humidity and temperature.
+First, we calculate the average daily series of the previous 30 and 60 available days for the daily rainfall, humidity and temperature.
 
 ```{r, EVAL = TRUE}
 # Compute Quarter indicator variable
@@ -386,6 +393,10 @@ allRes[, Quarter:= quarter(DATE)]
 ## Computation of rolling mean using as time window 30 days
 # ---------------------------------------------------------
 
+# As a pre-processing step we have to exclude the stations that have less than 30 observations
+excludeStations30 <- allRes[, .N, by=STAID][N<30, STAID]
+allRes <- allRes[!(STAID %in% excludeStations30)]
+
 # Provide names of the variables to create
 varsToCreate30 <- c("PrecipRollAverage30","HumidRollAverage30","TempRollAverage30")
 
@@ -393,10 +404,15 @@ varsToCreate30 <- c("PrecipRollAverage30","HumidRollAverage30","TempRollAverage3
 varsToModify <- c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp")
 
 # Compute rolling mean using a time window of 30 days
-allRes[, varsToCreate30 := lapply(.SD, rollmean, 30, fill = NA),.SDcols = varsToModify, by = STAID]
+# align is mandatory in order to calculate for each observation the rolling mean of the 30 previous values.
+allRes[, c(varsToCreate30) := lapply(.SD, rollmean, 30, fill = NA, align = "right"),.SDcols = varsToModify, by = STAID]
 
 ## Computation of rolling mean using as time window 60 days
 # ---------------------------------------------------------
+
+# As a pre-processing step we have to exclude the stations that have less than 60 observations
+excludeStations60 <- allRes[, .N, by=STAID][N<60, STAID]
+allRes <- allRes[!(STAID %in% excludeStations60)]
 
 # Provide names of the variables to create
 varsToCreate60 <- c("PrecipRollAverage60","HumidRollAverage60","TempRollAverage60")
@@ -405,7 +421,9 @@ varsToCreate60 <- c("PrecipRollAverage60","HumidRollAverage60","TempRollAverage6
 varsToModify <- c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp")
 
 # Compute rolling mean using a time window of 60 days
-# allRes[, varsToCreate60 := lapply(.SD, rollmean, 60, fill = NA),.SDcols = varsToModify, by = STAID]
+# align is mandatory in order to calculate for each observation the rolling mean of the 60 previous values.
+allRes[, c(varsToCreate60) := lapply(.SD, rollmean, 60, fill = NA, align = "right"),.SDcols = varsToModify, by = STAID]
+str(allRes)
 
 ```
 
@@ -459,7 +477,7 @@ varsToModify               <- c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_Dai
 
 
 # Compute weighted rolling mean for the previous 15 days of each record per station
-allRes[, varsToCreateWeightRollMean:= lapply(.SD,
+allRes[, c(varsToCreateWeightRollMean):= lapply(.SD,
                                             roll_mean,
                                             n       = 15L,
                                             weights = customWeights,
@@ -489,7 +507,7 @@ varsToModify               <- c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_Dai
 
 
 # Compute weighted rolling sd for the previous 15 days of each record per station
-allRes[, varsToCreateWeightRollSD:= lapply(.SD,
+allRes[, (varsToCreateWeightRollSD):= lapply(.SD,
                                             roll_sd,
                                             n       = 15L,
                                             weights = customWeights,
@@ -506,23 +524,12 @@ allRes[, varsToCreateWeightRollSD:= lapply(.SD,
 ## Computation of rolling quantile (90%) using as time window 15 days
 # ---------------------------------------------------------
 
-# Provide names of the variables to create
-varsToCreateWeightRollQQ <- c("RainweightedRollQuantile15",
-                              "TempweightedRollQuantile15",
-                              "HumidweightedRollQuantile15")
-
-# Provide list of the variables that will be used to compute the  quantile (90%)
-varsToModify               <- c("RR_DailyPrecipAmount", "RR_DailyHumid", "RR_DailyMeanTemp")
-
-
-# Compute quantile (90%) for the previous 15 days of each record per station
-#allRes[, varsToCreateWeightRollQQ:= lapply(.SD,
-#                                            runquantile,
-#                                            k       = 15,
-#                                            probs   = 0.9,
-#                                            align   = "right"),
-#    .SDcols = varsToModify,
-#    by=STAID
-#    ]
+allRes[, RainRollQuantile15:=  caTools::runquantile(RR_DailyPrecipAmount, k = 15, 
+                                                    probs = 0.9, endrule="NA", align = "right"), by = STAID]
+allRes[, TempRollQuantile15:=  caTools::runquantile(RR_DailyMeanTemp, k = 15, 
+                                                    probs = 0.9, endrule="NA", align = "right"), by = STAID]
+allRes[, HumidRollQuantile15:=  caTools::runquantile(RR_DailyHumid, k = 15, 
+                                                     probs = 0.9, endrule="NA", align = "right"), by = STAID]
+str(allRes)
 ```
 
