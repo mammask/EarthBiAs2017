@@ -6,7 +6,6 @@ output:
   github_document:
     toc: true
     toc_depth: 4
-always_allow_html: yes
 ---
 
 ## Introduction to `sparklyr`
@@ -50,13 +49,13 @@ have the attached ’lazy’ SQL operations
 
 `sdf_copy_to`: Copy an object into Spark, and return an R object wrapping the copied object (typically, a Spark DataFrame).
 
-```{r,eval=TRUE}
+```{r,eval=FALSE}
 # Load sparklyr
 library(sparklyr)
 # Connect to Local Remote Apache Spark cluster
 sc      <- spark_connect(master = "local")
 # Load environmental data
-envData <- readRDS("/Users/mammask/Documents/Summer_School_2017/EarthBiAs2017/data/spanishPrecipRecords.RDS")
+envData <- readRDS("/Users/konstantinos.mammas/Documents/EarthBiAs2017/data/spanishPrecipRecords.RDS")
 # Copy R object into spark
 tbl <- sparklyr::sdf_copy_to(sc          = sc,
                              x           = envData,
@@ -71,7 +70,7 @@ tbl
 
 Gets number of partitions of a Spark DataFrame:
 
-```{r,eval=TRUE}
+```{r,eval=FALSE}
 # Obtain number of partitions
 numPart <- sparklyr::sdf_num_partitions(tbl)
 numPart
@@ -81,7 +80,7 @@ numPart
 
 Perform **reshape2::dcast** using Spark DataFrame:
 
-```{r,eval=TRUE}
+```{r,eval=FALSE}
 # Compute the number of of missing and non-missing rainfall records per station
 tbl %>% dplyr::group_by(STAID, Q_RR) %>% dplyr::summarise(N = n()) %>%
   # Create a pivot table
@@ -93,7 +92,7 @@ tbl %>% dplyr::group_by(STAID, Q_RR) %>% dplyr::summarise(N = n()) %>%
 The current version of `sparklyr: 0.6.0` does not allow date manipulation using `dplyr`. In our case we can directly modify date using native **HIVE-SQL** functions. The following example converts date from integer format to date:
 
 
-```{r, eval = TRUE}
+```{r, eval = FALSE}
 library(DBI)
 # Perform date manipulation on Spark using HIVE-SQL 
 # (HIVE does not allow direct table update so we create a new table and drop the old one)
@@ -130,7 +129,7 @@ tbl <- spark_read_table(sc = sc, name = "envSparlTblUpd")
 Compute the approximate quantiles for a continuous variable to some relative error. In the following example we compute the quantiles of the daily rainfall amount for a specific station:
 
 
-```{r, eval = TRUE}
+```{r, eval = FALSE}
 # Filters station 229
 tbl %>% dplyr::filter(staid == 229 & rr != -9999) %>% dplyr::group_by(staid) %>%
   # Compute quantile
@@ -141,7 +140,7 @@ tbl %>% dplyr::filter(staid == 229 & rr != -9999) %>% dplyr::group_by(staid) %>%
 
 Sort a Spark DataFrame by one or more columns, with each column sorted in ascending order.
 
-```{r, eval = TRUE}
+```{r, eval = FALSE}
 tbl %>% sparklyr::sdf_sort(columns = c("staid","date"))
 ```
 
@@ -156,51 +155,51 @@ the value 0.0, and values greater than the threshold are assigned the value 1.0.
 
 In the following example we will create a column which is set to 1 in cases where rainfall records have values greater than 0 mm:
 
-```{r, eval = TRUE}
+```{r, eval = FALSE}
 # Filter out missing records
-tbl %>% dplyr::filter(q_rr != 9L) %>% 
+tbl %>% dplyr::filter(Q_RR != 9L) %>% 
   # Convert variable to numeric
-  dplyr::mutate(rr = as.numeric(rr)) %>%
+  dplyr::mutate(RR = as.numeric(RR)) %>%
     # Perform binarizer
-    sparklyr::sdf_mutate(Event = ft_binarizer(rr, 0))
+    sparklyr::sdf_mutate(Event = ft_binarizer(RR, 0))
 ```
 
 ### `ft_bucketizer`
 
 Divides the range of x into intervals and codes the values in x according to which interval they fall. In the following example we compute range intervals of monthly rainfall amount:
 
-```{r, eval= TRUE}
+```{r, eval= FALSE}
 # Filter out non-missing records
-tbl %>% dplyr::filter(q_rr != 9L) %>%
+tbl %>% dplyr::filter(Q_RR != 9L) %>%
   # Group by station year, month
-  dplyr::group_by(staid, year(date), month(date)) %>%
+  dplyr::group_by(STAID, year(DATE), month(DATE)) %>%
     # Sum the monthly rainfall amount per station and year
-    dplyr::summarise(rr = as.numeric(sum(rr))) %>%
+    dplyr::summarise(RR = as.numeric(sum(RR))) %>%
       # Compute buckets of total rainfall distribution
-      sparklyr::ft_bucketizer(input.col = "rr", output.col = "Bucket",
+      sparklyr::ft_bucketizer(input.col = "RR", output.col = "Bucket",
                               splits = c(0, 100, 200, 300, 400, Inf)
                               )
 ```
 
-The resulting `data.frame` contains one column named bucket with the user defined intervasls.
+The resulting `data.frame` contains one column named bucket with the user defined intervals.
 
 # Environmental rainfall indices using `sparklyr`
 
-In the following sections we will calculate a number of environmental rainfall indices for a big number of meteorological stations accross Europe. 
+In the following sections we will calculate a number of environmental rainfall indices for a big number of meteorological stations across Europe. 
 
 ### Annual rainfall amount
 
 In the following example, the annual rainfall amount is calculated for station 229. Missing rainfall records are excluded:
 
-```{r, eval = TRUE}
+```{r, eval = FALSE}
 # Select station 229 and filter out missing records
-tbl %>% dplyr::filter(staid == 229 & rr != -9999L) %>%
+tbl %>% dplyr::filter(STAID == 229 & RR != -9999L) %>%
   # Group by year
-  dplyr::group_by(year(date)) %>% 
+  dplyr::group_by(year(DATE)) %>% 
     # Sum the daily rainfall records
-    dplyr::summarise(N = sum(rr)) %>%
+    dplyr::summarise(N = sum(RR)) %>%
       # Order records
-      sparklyr::sdf_sort(columns = c("year(date)"))
+      sparklyr::sdf_sort(columns = c("year(DATE)"))
 ```
 
 #### Visualize annual rainfall amount
@@ -210,16 +209,16 @@ We can extend the previous script by adding a time series chart of the annual ra
 ```{r, eval = FALSE}
 library(dygraphs)
 # Select station 229 and filter out missing records
-tbl %>% dplyr::filter(staid == 229 & rr != -9999L) %>%
+tbl %>% dplyr::filter(STAID == 229 & RR != -9999L) %>%
     # Group by year
-   dplyr::group_by(year(date)) %>%
+   dplyr::group_by(year(DATE)) %>%
       # Sum the daily rainfall records
-      dplyr::summarise(N = sum(rr)) %>%
+      dplyr::summarise(N = sum(RR)) %>%
         # Order records
-        sparklyr::sdf_sort(columns = c("year(date)")) %>% dplyr::collect() %>%
+        sparklyr::sdf_sort(columns = c("year(DATE)")) %>% dplyr::collect() %>%
             # Create plot using dygraph
             dygraph(main = paste0("Annual rainfall series of station: 229")) %>%
-                dyAxis("y", label = "N") %>% dyAxis("x", label = "year(date)") %>%
+                dyAxis("y", label = "N") %>% dyAxis("x", label = "year(DATE)") %>%
                     dyRangeSelector() %>% dyOptions(fillGraph = TRUE, fillAlpha = 0.4)
 ```
 
@@ -228,15 +227,15 @@ The same example can be implemented using `ggplot2`:
 ```{r, eval = FALSE}
 library(ggplot2)
 # Select station 229 and filter out missing records
-tbl %>% dplyr::filter(staid == 229 & rr != -9999L) %>%
+tbl %>% dplyr::filter(STAID == 229 & RR != -9999L) %>%
     # Group by year
-   dplyr::group_by(year(date)) %>%
+   dplyr::group_by(year(DATE)) %>%
       # Sum the daily rainfall records
-      dplyr::summarise(N = sum(rr)) %>%
+      dplyr::summarise(N = sum(RR)) %>%
         # Order records
-        sparklyr::sdf_sort(columns = c("year(date)")) %>% dplyr::collect() %>%
+        sparklyr::sdf_sort(columns = c("year(DATE)")) %>% dplyr::collect() %>%
           # Create plot using ggplot2
-          ggplot2::ggplot(aes(x = `year(date)`, y = N)) + geom_line() + 
+          ggplot2::ggplot(aes(x = `year(DATE)`, y = N)) + geom_line() + 
             ggtitle("Annual Rainfall series of station: 229") + xlab("Year") +
               ylab("Annual Rainfall Amount (mm)")
 ```

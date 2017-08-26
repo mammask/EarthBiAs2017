@@ -14,7 +14,7 @@ always_allow_html: yes
 
 ### Lecture workflow
 
-The purpose of this session is to fit a Machine Learning model to predict daily rainfall occurence using a set of environmental variables.
+The purpose of this session is to fit a Machine Learning model to predict daily rainfall occurrence using a set of environmental variables.
 
 We need to answer a set of questions before we start working on this task:
 
@@ -22,13 +22,13 @@ We need to answer a set of questions before we start working on this task:
 2.  How are we going to access this information?
 3.  What type of data cleaning techniques will be used in order to perform feature transformation?
 4.  Which environmental variables will be used in our modelling approach?
-5.  If we select 3 meteorological variables how are we going to gather this information in order to fita model to a particular meteorological station?
+5.  If we select 3 meteorological variables how are we going to gather this information in order to fit a model to a particular meteorological station?
 
-In order to answer these questions we will follow the steps bresented below:
+In order to answer these questions we will follow the steps presented below:
 
 1.  Obtain environmental daily rainfall records from ECA&D using the `ECADownloader` tool
 2.  Select variables of interest
-3.  Perform data cleaning/ transofrmation techniques using the `data.table` package
+3.  Perform data cleaning/ transformation techniques using the `data.table` package
 4.  Select country/ stations that will be used to perform feature engineering
 5.  Find optimal period where a station has the available records for all the selected meteorological variables.
 
@@ -212,7 +212,7 @@ You can visit the following [link](https://github.com/mammask/EarthBiAs2017/blob
 
 ## Data Loading in R
 
-At this point we have dowloaded the data locally. As a next step we need to load the desired variables in R. For this reason we will run the following function:
+At this point we have downloaded the data locally. As a next step we need to load the desired variables in R. For this reason we will run the following function:
 
 ``` {r, EVAL = TRUE }
 # Obtain data in R using as input a set of environmental variables:
@@ -298,7 +298,7 @@ gc()
 
 ## A heuristic approach to impute missing values
 
-There are several approaches to deal with the problem of missing values. These methods refer to multiple imputation techiques, deleting records with missing values, replacing with mean or median etc.
+There are several approaches to deal with the problem of missing values. These methods refer to multiple imputation techniques, deleting records with missing values, replacing with mean or median etc.
 
 In this exercise we impute maximum 5 records per month using the monthly mean. In cases where more than 5 records appear during a month, these records are excluded.
 
