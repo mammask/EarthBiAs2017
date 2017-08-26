@@ -250,20 +250,40 @@ tbl %>% dplyr::filter(STAID == 229 & RR != -9999L) %>%
               ylab("Annual Rainfall Amount (mm)")
 ```
 
-#### Exercise 3 - Number of days with "extreme" rainfall events
-
-Calculate the annual number of days of extreme rainfall events per station and year using `sparklyr` and `dplyr` for all the Greek meteorological stations.
-
-### Number of consecutive rainfall events for all European stations
-
-
-
-### Number of extreme consecutive rainfall events for all European stations
-
 # Useful functions
 
-### Read Spark DataFrame
+## Copy/Save Spark DataFrame to memory
 
+We can copy a spark DataFrame in memoery using the following script:
 
+```{r, eval = TRUE}
+# Obtain available records for station 229
+localData <- tbl %>% dplyr::filter(STAID == 229) %>% dplyr::collect()
+# Read a specific column - This works only for one column
+dates <- sparklyr::sdf_read_column(x = tbl, column = c("DATE")) 
+```
 
+## Save Spark DataFrame locally
+
+### Save Spark DataFrame in **Parquet** format
+
+If you are not familiar with **`Parquet** you can find more details in the following [link](https://parquet.apache.org/). The following script save the Spark DataFrame of all the available records in **tbl** locally in **Parquet** format:
+
+```{r, eval = TRUE}
+# Save tbl file in the following path: ./parquetPath/
+sparklyr::spark_write_parquet(tbl,"./parquetPath/")
+```
+
+A new folder is now created in our working directory and is called **parquetPath**.
+
+### Save Spark DataFrame in **.csv** format
+
+```{r, eval = TRUE}
+# Save tbl file in the following path: ./parquetPath/
+sparklyr::spark_write_csv(tbl,"./csvPath/")
+```
+
+If we compare the size of the **Parquet** folder with the size of the **.csv** we will observe that the size of the .csv is 10 times bigger. This is a very important finding when it comes to save big data objects locally.
+
+Also, the sparklyr write functions will produce as many copies as the number of partitions. In our case, tbl is partitioned in 8 "chuncks".
 

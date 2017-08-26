@@ -19,11 +19,11 @@ EarthBiAs2017, Rhodes Island, Greece
 -   [Environmental rainfall indices using `sparklyr`](#environmental-rainfall-indices-using-sparklyr)
     -   [Annual rainfall amount](#annual-rainfall-amount)
         -   [Visualize annual rainfall amount](#visualize-annual-rainfall-amount)
-        -   [Exercise 3 - Number of days with "extreme" rainfall events](#exercise-3---number-of-days-with-extreme-rainfall-events)
-    -   [Number of consecutive rainfall events for all European stations](#number-of-consecutive-rainfall-events-for-all-european-stations)
-    -   [Number of extreme consecutive rainfall events for all European stations](#number-of-extreme-consecutive-rainfall-events-for-all-european-stations)
 -   [Useful functions](#useful-functions)
-    -   [Read Spark DataFrame](#read-spark-dataframe)
+    -   [Copy/Save Spark DataFrame to memory](#copysave-spark-dataframe-to-memory)
+    -   [Save Spark DataFrame locally](#save-spark-dataframe-locally)
+        -   [Save Spark DataFrame in **Parquet** format](#save-spark-dataframe-in-parquet-format)
+        -   [Save Spark DataFrame in **.csv** format](#save-spark-dataframe-in-.csv-format)
 
 Introduction to `sparklyr`
 --------------------------
@@ -137,7 +137,7 @@ tbl %>% dplyr::group_by(STAID, Q_RR) %>% dplyr::summarise(N = n()) %>%
   sparklyr::sdf_pivot(STAID ~ Q_RR, list(N = "sum"))
 ```
 
-    ## # Source:   table<sparklyr_tmp_d04555286849> [?? x 4]
+    ## # Source:   table<sparklyr_tmp_dace24d8a76e> [?? x 4]
     ## # Database: spark_connection
     ##    STAID   `0`   `1`   `9`
     ##    <int> <dbl> <dbl> <dbl>
@@ -223,7 +223,7 @@ Sort a Spark DataFrame by one or more columns, with each column sorted in ascend
 tbl %>% sparklyr::sdf_sort(columns = c("staid","date"))
 ```
 
-    ## # Source:   table<sparklyr_tmp_d0454a304a76> [?? x 5]
+    ## # Source:   table<sparklyr_tmp_dace1110e9c7> [?? x 5]
     ## # Database: spark_connection
     ##    STAID SOUID       DATE    RR  Q_RR
     ##    <int> <int>      <chr> <int> <int>
@@ -259,7 +259,7 @@ tbl %>% dplyr::filter(Q_RR != 9L) %>%
     sparklyr::sdf_mutate(Event = ft_binarizer(RR, 0))
 ```
 
-    ## # Source:   table<sparklyr_tmp_d04575f1318> [?? x 6]
+    ## # Source:   table<sparklyr_tmp_dace1e8e0a3e> [?? x 6]
     ## # Database: spark_connection
     ##    STAID SOUID       DATE  Q_RR    RR Event
     ##    <int> <int>      <chr> <int> <dbl> <dbl>
@@ -292,7 +292,7 @@ tbl %>% dplyr::filter(Q_RR != 9L) %>%
                               )
 ```
 
-    ## # Source:   table<sparklyr_tmp_d04571dca253> [?? x 5]
+    ## # Source:   table<sparklyr_tmp_dace65e29530> [?? x 5]
     ## # Database: spark_connection
     ##    STAID `year(DATE)` `month(DATE)`    RR Bucket
     ##    <int>        <int>         <int> <dbl>  <dbl>
@@ -330,7 +330,7 @@ tbl %>% dplyr::filter(STAID == 229 & RR != -9999L) %>%
       sparklyr::sdf_sort(columns = c("year(DATE)"))
 ```
 
-    ## # Source:   table<sparklyr_tmp_d0451dd7c3bb> [?? x 2]
+    ## # Source:   table<sparklyr_tmp_dace3a22a92> [?? x 2]
     ## # Database: spark_connection
     ##    `year(DATE)`     N
     ##           <int> <dbl>
@@ -368,7 +368,7 @@ tbl %>% dplyr::filter(STAID == 229 & RR != -9999L) %>%
 
 <!--html_preserve-->
 
-<script type="application/json" data-for="htmlwidget-8d3ad8afb46d887a33dd">{"x":{"attrs":{"axes":{"x":{"pixelsPerLabel":60,"drawAxis":true},"y":{"drawAxis":true}},"title":"Annual rainfall series of station: 229","labels":["year(DATE)","N"],"legend":"auto","retainDateWindow":false,"ylabel":"N","xlabel":"year(DATE)","showRangeSelector":true,"rangeSelectorHeight":40,"rangeSelectorPlotFillColor":" #A7B1C4","rangeSelectorPlotStrokeColor":"#808FAB","interactionModel":"Dygraph.Interaction.defaultModel","stackedGraph":false,"fillGraph":true,"fillAlpha":0.4,"stepPlot":false,"drawPoints":false,"pointSize":1,"drawGapEdgePoints":false,"connectSeparatedPoints":false,"strokeWidth":1,"strokeBorderColor":"white","colorValue":0.5,"colorSaturation":1,"includeZero":false,"drawAxesAtZero":false,"logscale":false,"axisTickSize":3,"axisLineColor":"black","axisLineWidth":0.3,"axisLabelColor":"black","axisLabelFontSize":14,"axisLabelWidth":60,"drawGrid":true,"gridLineWidth":0.3,"rightGap":5,"digitsAfterDecimal":2,"labelsKMB":false,"labelsKMG2":false,"labelsUTC":false,"maxNumberWidth":6,"animatedZooms":false,"mobileDisableYTouch":true},"annotations":[],"shadings":[],"events":[],"format":"numeric","data":[[1955,1956,1957,1958,1959,1960,1961,1962,1963,1964,1965,1966,1967,1968,1969,1970,1971,1972,1973,1974,1975,1976,1977,1978,1979,1980,1981,1982,1983,1984,1985,1986,1987,1988,1989,1990,1991,1992,1993,1994,1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017],[5735,5274,4121,4666,4552,7180,5403,5991,7171,3717,5538,5265,4561,4907,7322,4301,4825,5405,2804,2743,4497,6433,5510,5840,7194,3540,3681,3086,4686,5124,4262,3985,5414,4441,7505,3085,3028,3873,4047,3269,4140,6352,7369,3341,3866,5640,4911,4615,4761,3281,2288,4521,3148,4310,4360,7743,4766,3176,5124,4589,3093,4483,1316]],"fixedtz":false,"tzone":""},"evals":["attrs.interactionModel"],"jsHooks":[]}</script>
+<script type="application/json" data-for="htmlwidget-f64d75f5b3aafeee5444">{"x":{"attrs":{"axes":{"x":{"pixelsPerLabel":60,"drawAxis":true},"y":{"drawAxis":true}},"title":"Annual rainfall series of station: 229","labels":["year(DATE)","N"],"legend":"auto","retainDateWindow":false,"ylabel":"N","xlabel":"year(DATE)","showRangeSelector":true,"rangeSelectorHeight":40,"rangeSelectorPlotFillColor":" #A7B1C4","rangeSelectorPlotStrokeColor":"#808FAB","interactionModel":"Dygraph.Interaction.defaultModel","stackedGraph":false,"fillGraph":true,"fillAlpha":0.4,"stepPlot":false,"drawPoints":false,"pointSize":1,"drawGapEdgePoints":false,"connectSeparatedPoints":false,"strokeWidth":1,"strokeBorderColor":"white","colorValue":0.5,"colorSaturation":1,"includeZero":false,"drawAxesAtZero":false,"logscale":false,"axisTickSize":3,"axisLineColor":"black","axisLineWidth":0.3,"axisLabelColor":"black","axisLabelFontSize":14,"axisLabelWidth":60,"drawGrid":true,"gridLineWidth":0.3,"rightGap":5,"digitsAfterDecimal":2,"labelsKMB":false,"labelsKMG2":false,"labelsUTC":false,"maxNumberWidth":6,"animatedZooms":false,"mobileDisableYTouch":true},"annotations":[],"shadings":[],"events":[],"format":"numeric","data":[[1955,1956,1957,1958,1959,1960,1961,1962,1963,1964,1965,1966,1967,1968,1969,1970,1971,1972,1973,1974,1975,1976,1977,1978,1979,1980,1981,1982,1983,1984,1985,1986,1987,1988,1989,1990,1991,1992,1993,1994,1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017],[5735,5274,4121,4666,4552,7180,5403,5991,7171,3717,5538,5265,4561,4907,7322,4301,4825,5405,2804,2743,4497,6433,5510,5840,7194,3540,3681,3086,4686,5124,4262,3985,5414,4441,7505,3085,3028,3873,4047,3269,4140,6352,7369,3341,3866,5640,4911,4615,4761,3281,2288,4521,3148,4310,4360,7743,4766,3176,5124,4589,3093,4483,1316]],"fixedtz":false,"tzone":""},"evals":["attrs.interactionModel"],"jsHooks":[]}</script>
 <!--/html_preserve-->
 The same example can be implemented using `ggplot2`:
 
@@ -390,15 +390,42 @@ tbl %>% dplyr::filter(STAID == 229 & RR != -9999L) %>%
 
 ![](Lecture-2-Big_Data_Management_Using_Sparklyr_files/figure-markdown_github/unnamed-chunk-13-1.png)
 
-#### Exercise 3 - Number of days with "extreme" rainfall events
-
-Calculate the annual number of days of extreme rainfall events per station and year using `sparklyr` and `dplyr` for all the Greek meteorological stations.
-
-### Number of consecutive rainfall events for all European stations
-
-### Number of extreme consecutive rainfall events for all European stations
-
 Useful functions
 ================
 
-### Read Spark DataFrame
+Copy/Save Spark DataFrame to memory
+-----------------------------------
+
+We can copy a spark DataFrame in memoery using the following script:
+
+``` r
+# Obtain available records for station 229
+localData <- tbl %>% dplyr::filter(STAID == 229) %>% dplyr::collect()
+# Read a specific column - This works only for one column
+dates <- sparklyr::sdf_read_column(x = tbl, column = c("DATE")) 
+```
+
+Save Spark DataFrame locally
+----------------------------
+
+### Save Spark DataFrame in **Parquet** format
+
+If you are not familiar with **\`Parquet** you can find more details in the following [link](https://parquet.apache.org/). The following script save the Spark DataFrame of all the available records in **tbl** locally in **Parquet** format:
+
+``` r
+# Save tbl file in the following path: ./parquetPath/
+sparklyr::spark_write_parquet(tbl,"./parquetPath/")
+```
+
+A new folder is now created in our working directory and is called **parquetPath**.
+
+### Save Spark DataFrame in **.csv** format
+
+``` r
+# Save tbl file in the following path: ./parquetPath/
+sparklyr::spark_write_csv(tbl,"./csvPath/")
+```
+
+If we compare the size of the **Parquet** folder with the size of the **.csv** we will observe that the size of the .csv is 10 times bigger. This is a very important finding when it comes to save big data objects locally.
+
+Also, the sparklyr write functions will produce as many copies as the number of partitions. In our case, tbl is partitioned in 8 "chuncks".
