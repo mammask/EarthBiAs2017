@@ -1,0 +1,269 @@
+---
+title: "Big data analysis using `sparklyr` <br>"
+author: "Kostas Mammas, Statistical Programmer <br> mail: mammaskon@gmail.com <br>"
+date: "EarthBiAs2017, Rhodes Island, Greece"
+output:
+  github_document:
+    toc: true
+    toc_depth: 4
+always_allow_html: yes
+---
+
+## Introduction to `sparklyr`
+
+**Apache Spark** is an open source parallel processing framework for running large-scale data analytics applications across clustered computers. It can handle both batch and real-time analytics and data processing workloads.
+
+**sparklyr** is an R interface to Apache Spark, a fast and general engine for big data processing. This package supports connecting to local and remote Apache Spark clusters, provides a **dplyr** compatible back-end, and provides an interface to Spark's built-in machine learning algorithms
+
+## What is the benefit of using `sparklyr`?
+
+There are cases where we need to manipulate and also perform analytics on big data structures. One task could be the prediction of daily rainfall occurence of all the available meteorological records in ECA&D. As a first step we would need to perform data manipulation in order to create the appropriate variables that will help us solve this prediction problem and as a second one we would fit a model that is able to handle this large structure.
+
+If we had access on a big data framework (i.e. hadoop), we would perform the data manipulation step using HIVE or Impala and then we would load the features of interest to a statistical language to fit the respective Machine Learning or Predictive model.
+
+With `sparklyr` we can do both using pure `dplyr` functions. Of course, `sparklyr` is a new development framework so not all the available `dplyr` functions are available. In the following sections we provide information about:
+
+1. How to install `sparklyr`
+2. The most important analytical functions
+
+## Installation - Local Remote Apache Spark cluster
+
+As a first step you need to install **sparklyr** package from CRAN as follows:
+
+```{r,eval=FALSE}
+# Install sparklyr package
+install.packages("sparklyr")
+```
+
+You need to install also **spark** to set up a Local Remote Apache Spark cluster:
+
+```{r,eval=FALSE}
+# Load sparklyr
+library("sparklyr")
+# Obtain available versions of spark
+allVer <- spark_available_versions()
+# Obtain latest version
+latVer <- allVer[nrow(allVer),"spark"]
+# Install latest version of spark
+spark_install(version = latVer)
+```
+
+## `sdf_` family functions
+
+The family of functions prefixed with sdf_ generally access the Scala Spark DataFrame API directly,
+as opposed to the dplyr interface which uses Spark SQL. These functions will ’force’ any
+pending SQL in a dplyr pipeline, such that the resulting tbl_spark object returned will no longer
+have the attached ’lazy’ SQL operations
+
+### `sdf_copy_to`
+
+`sdf_copy_to`: Copy an object into Spark, and return an R object wrapping the copied object (typically, a Spark DataFrame).
+
+```{r,eval=TRUE}
+# Load sparklyr
+library(sparklyr)
+# Connect to Local Remote Apache Spark cluster
+sc      <- spark_connect(master = "local")
+# Load environmental data
+envData <- readRDS("/Users/konstantinos.mammas/Documents/EarthBiAs2017/data/spanishPrecipRecords.RDS")
+# Copy R object into spark
+tbl <- sparklyr::sdf_copy_to(sc          = sc,
+                             x           = envData,
+                             name        = "envSparlTbl",
+                             memory      = TRUE,
+                             repartition = 0L,
+                             overwrite   = TRUE)
+tbl
+```
+
+### `sdf_num_partitions`
+
+Gets number of partitions of a Spark DataFrame:
+
+```{r,eval=TRUE}
+# Obtain number of partitions
+numPart <- sparklyr::sdf_num_partitions(tbl)
+numPart
+```
+
+### `sdf_pivot`
+
+Perform **reshape2::dcast** using Spark DataFrame:
+
+```{r,eval=TRUE}
+# Compute the number of of missing and non-missing rainfall records per station
+tbl %>% dplyr::group_by(STAID, Q_RR) %>% dplyr::summarise(N = n()) %>%
+  # Create a pivot table
+  sparklyr::sdf_pivot(STAID ~ Q_RR, list(N = "sum"))
+```
+
+## Date manipulation on **spark** using **HIVE-SQL**
+
+The current version of `sparklyr: 0.6.0` does not allow date manipulation using `dplyr`. In our case we can directly modify date using native **HIVE-SQL** functions. The following example converts date from integer format to date:
+
+
+```{r, eval = TRUE}
+library(DBI)
+# Perform date manipulation on Spark using HIVE-SQL 
+# (HIVE does not allow direct table update so we create a new table and drop the old one)
+
+# Drop HIVE table if exists
+dbExecute(sc, "DROP TABLE IF EXISTS envSparlTblUpd")
+
+# Create hive table with updated column
+dbExecute(sc, "CREATE TABLE  envSparlTblUpd AS
+                (SELECT STAID,
+                        SOUID,
+                        date_format(CONCAT(SUBSTR(DATE,1,4),
+                                    '-',
+                                    SUBSTR(DATE,5,2),
+                                    '-',
+                                    SUBSTR(DATE,7,2)), 'yyyy-MM-dd') AS DATE,
+                                    RR,
+                                    Q_RR
+                        FROM envSparlTbl
+                )
+                "
+          )
+
+# Drop old table
+dbExecute(sc, "DROP TABLE IF EXISTS envSparlTbl")
+
+# Read Spark DataFrame
+tbl <- spark_read_table(sc = sc, name = "envSparlTblUpd")
+```
+
+
+### `sdf_quantile`
+
+Compute the approximate quantiles for a continuous variable to some relative error. In the following example we compute the quantiles of the daily rainfall amount for a specific station:
+
+
+```{r, eval = TRUE}
+# Filters station 229
+tbl %>% dplyr::filter(staid == 229 & rr != -9999) %>% dplyr::group_by(staid) %>%
+  # Compute quantile
+  sparklyr::sdf_quantile("rr", probabilities = c(0, 0.25, 0.5, 0.75, 0.90,  1))
+```
+
+### `sdf_sort`
+
+Sort a Spark DataFrame by one or more columns, with each column sorted in ascending order.
+
+```{r, eval = TRUE}
+tbl %>% sparklyr::sdf_sort(columns = c("staid","date"))
+```
+
+## `ft_` family functions
+
+The family of functions prefixed with ft_ work as feature transformer functions.
+
+### `ft_binarizer`
+
+Apply thresholding to a column, such that values less than or equal to the threshold are assigned
+the value 0.0, and values greater than the threshold are assigned the value 1.0.
+
+In the following example we will create a column which is set to 1 in cases where rainfall records have values greater than 0 mm:
+
+```{r, eval = TRUE}
+# Filter out missing records
+tbl %>% dplyr::filter(Q_RR != 9L) %>% 
+  # Convert variable to numeric
+  dplyr::mutate(RR = as.numeric(RR)) %>%
+    # Perform binarizer
+    sparklyr::sdf_mutate(Event = ft_binarizer(RR, 0))
+```
+
+### `ft_bucketizer`
+
+Divides the range of x into intervals and codes the values in x according to which interval they fall. In the following example we compute range intervals of monthly rainfall amount:
+
+```{r, eval= TRUE}
+# Filter out non-missing records
+tbl %>% dplyr::filter(Q_RR != 9L) %>%
+  # Group by station year, month
+  dplyr::group_by(STAID, year(DATE), month(DATE)) %>%
+    # Sum the monthly rainfall amount per station and year
+    dplyr::summarise(RR = as.numeric(sum(RR))) %>%
+      # Compute buckets of total rainfall distribution
+      sparklyr::ft_bucketizer(input.col = "RR", output.col = "Bucket",
+                              splits = c(0, 100, 200, 300, 400, Inf)
+                              )
+```
+
+The resulting `data.frame` contains one column named bucket with the user defined intervals.
+
+# Environmental rainfall indices using `sparklyr`
+
+In the following sections we will calculate a number of environmental rainfall indices for a big number of meteorological stations across Europe. 
+
+### Annual rainfall amount
+
+In the following example, the annual rainfall amount is calculated for station 229. Missing rainfall records are excluded:
+
+```{r, eval = TRUE}
+# Select station 229 and filter out missing records
+tbl %>% dplyr::filter(STAID == 229 & RR != -9999L) %>%
+  # Group by year
+  dplyr::group_by(year(DATE)) %>% 
+    # Sum the daily rainfall records
+    dplyr::summarise(N = sum(RR)) %>%
+      # Order records
+      sparklyr::sdf_sort(columns = c("year(DATE)"))
+```
+
+#### Visualize annual rainfall amount
+
+We can extend the previous script by adding a time series chart of the annual rainfall series directly:
+
+```{r, eval = TRUE}
+library(dygraphs)
+# Select station 229 and filter out missing records
+tbl %>% dplyr::filter(STAID == 229 & RR != -9999L) %>%
+    # Group by year
+   dplyr::group_by(year(DATE)) %>%
+      # Sum the daily rainfall records
+      dplyr::summarise(N = sum(RR)) %>%
+        # Order records
+        sparklyr::sdf_sort(columns = c("year(DATE)")) %>% dplyr::collect() %>%
+            # Create plot using dygraph
+            dygraph(main = paste0("Annual rainfall series of station: 229")) %>%
+                dyAxis("y", label = "N") %>% dyAxis("x", label = "year(DATE)") %>%
+                    dyRangeSelector() %>% dyOptions(fillGraph = TRUE, fillAlpha = 0.4)
+```
+
+The same example can be implemented using `ggplot2`:
+
+```{r, eval = TRUE}
+library(ggplot2)
+# Select station 229 and filter out missing records
+tbl %>% dplyr::filter(STAID == 229 & RR != -9999L) %>%
+    # Group by year
+   dplyr::group_by(year(DATE)) %>%
+      # Sum the daily rainfall records
+      dplyr::summarise(N = sum(RR)) %>%
+        # Order records
+        sparklyr::sdf_sort(columns = c("year(DATE)")) %>% dplyr::collect() %>%
+          # Create plot using ggplot2
+          ggplot2::ggplot(aes(x = `year(DATE)`, y = N)) + geom_line() + 
+            ggtitle("Annual Rainfall series of station: 229") + xlab("Year") +
+              ylab("Annual Rainfall Amount (mm)")
+```
+
+#### Exercise 3 - Number of days with "extreme" rainfall events
+
+Calculate the annual number of days of extreme rainfall events per station and year using `sparklyr` and `dplyr` for all the Greek meteorological stations.
+
+### Number of consecutive rainfall events for all European stations
+
+
+
+### Number of extreme consecutive rainfall events for all European stations
+
+# Useful functions
+
+### Read Spark DataFrame
+
+
+
+
