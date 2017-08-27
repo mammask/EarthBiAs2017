@@ -54,7 +54,7 @@ For the purposes of the sessions in `R` we use a set of precipitation records fr
 
 ### Clone Repository of EarthBias2017
 
-In order to obtain the full material of the R lectures you will need to fork the following [repository](https://github.com/mammask/EarthBiAs2017). If you dont have github account just take the following steps:
+In order to obtain the full material of the R lectures you will need to fork the following [repository](https://github.com/mammask/EarthBiAs2017). If you dont have a github account just take the following steps:
 
 1. Create a new version control project in R using the RStudio console
 2. You will be asked to provide the Git repository
