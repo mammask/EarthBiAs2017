@@ -51,3 +51,15 @@ dir.create(outputsFolder, showWarnings = FALSE)                     # Create out
 ### Download data
 
 For the purposes of the sessions in `R` we use a set of precipitation records from 200 meteorological stations across Europe. Data can be found in the following [link](https://github.com/mammask/EarthBiAs2017/tree/master/data).
+
+### Clone Repository of EarthBias2017
+
+In order to obtain the full material of the R lectures you will need to fork the following [repository](https://github.com/mammask/EarthBiAs2017). If you dont have github account just take the following steps:
+
+1. Create a new version control project in R using the RStudio console
+2. You will be asked to provide the Git repository
+3. The Git repository is the following link: https://github.com/mammask/EarthBiAs2017.git
+4. Press create project and you will have all the material in your laptop
+
+
+
