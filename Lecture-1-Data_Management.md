@@ -136,7 +136,7 @@ Create new variables
 In `data.table` it is easy to create new variables or update existing ones using `:=` symbol:
 
 ``` r
-# Create a new column with the minimum rainfall per station
+# Create a new column with the max rainfall per station
 envDat[Q_RR != 9, maxRainfall := max(RR, na.rm = T), by = STAID]
 head(envDat)
 ```
