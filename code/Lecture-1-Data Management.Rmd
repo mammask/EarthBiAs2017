@@ -225,7 +225,7 @@ envDat[Q_RR !=9, lapply(.SD, min), .SDcols = c("RR", "Q_RR"), by = "STAID"]
 # Return the number of records per station
 envDat[, .N, by = "STAID"]
 # Create a counter variable per station
-envDat[, 1:.N, by = "STAID"]
+envDat[, c(1:.N), by = "STAID"]
 ```
 
 `SD` can be combined with `.N` to access specific rows of the dataset:
